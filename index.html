@@ -786,8 +786,9 @@
   <!-- ==================== FIREBASE & APPLICATION LOGIC ==================== -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, addDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- Secret Admin Gatekeeper (Evaluated silently without exposing string in UI) ---
     const _0xAdminHash = "b3V0Zml0bnlhbWFyaWtha2FAZ21haWwuY29t";
@@ -809,13 +810,21 @@
       if (st && statusText) st.textContent = statusText;
     }
 
-    // --- Global State ---
+    // --- Global State & Firebase Config ---
     let db, auth, firebaseUser = null;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'handcarry-cn-id-v1';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    const firebaseConfig = {
+      apiKey: "AIzaSyBsjWV2OO0KrsyI2jx8M9xrSadgtT1pOUo",
+      authDomain: "handcarry-china-indo.firebaseapp.com",
+      projectId: "handcarry-china-indo",
+      storageBucket: "handcarry-china-indo.firebasestorage.app",
+      messagingSenderId: "96076257561",
+      appId: "1:96076257561:web:d55c1d9d59a21c3b350d88",
+      measurementId: "G-80CT9L4GC6"
+    };
 
     let appState = {
-      session: null, // { role: 'admin' | 'customer', code, name, contact, email, adminOperator }
+      session: null,
       settings: {
         cutoffDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
         departureDate: new Date(Date.now() + 10 * 86400000).toISOString().split('T')[0],
@@ -823,9 +832,8 @@
       },
       items: [],
       customers: [],
-      payments: {}, // key: `${custCode}_${tripType}` -> { status: 'Belum Lunas'|'DP'|'Lunas', note: '' }
+      payments: {},
       billingTripFilter: 'ACTIVE',
-      // Temporary photo buffers for forms
       tempPhotos: {
         checkout: [],
         arrived: [],
@@ -857,11 +865,12 @@
     async function initApp() {
       try {
         updateLoadingProgress(15, "Memulai mesin pesawat... ✈️");
-        if (!firebaseConfig) {
-          throw new Error("Konfigurasi Firebase tidak ditemukan.");
-        }
-
         const app = initializeApp(firebaseConfig);
+        try {
+          getAnalytics(app);
+        } catch (analyticsErr) {
+          console.warn("Analytics skipped:", analyticsErr);
+        }
         auth = getAuth(app);
         db = getFirestore(app);
 
@@ -879,7 +888,6 @@
         updateLoadingProgress(90, "Menyiapkan ruang koper pastel... 🧳");
         renderCategoryOptions();
 
-        // Check if session exists in memory/sessionStorage (non-persistent fallback allowed only for session UI convenience, primary data in Firestore)
         setTimeout(() => {
           updateLoadingProgress(100, "Siap berangkat! ✨");
           setTimeout(() => {
@@ -901,11 +909,10 @@
       }
     }
 
-    // --- Firestore Real-Time Listeners (Strict Rule 1, 2, 3) ---
+    // --- Firestore Real-Time Listeners ---
     async function setupRealtimeListeners() {
       if (!firebaseUser) return;
 
-      // 1. Settings Listener
       const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'tripConfig');
       onSnapshot(settingsRef, (snap) => {
         if (snap.exists()) {
@@ -917,14 +924,12 @@
         if (appState.session) renderBillingSheet();
       }, (err) => console.error("Settings sync error:", err));
 
-      // 2. Customers Registry Listener
       const custCol = collection(db, 'artifacts', appId, 'public', 'data', 'customers');
       onSnapshot(custCol, (snap) => {
         appState.customers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         populateAdminCustomerFilter();
       }, (err) => console.error("Customers sync error:", err));
 
-      // 3. Items / Packages Listener
       const itemsCol = collection(db, 'artifacts', appId, 'public', 'data', 'packages');
       onSnapshot(itemsCol, (snap) => {
         appState.items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -933,7 +938,6 @@
         }
       }, (err) => console.error("Packages sync error:", err));
 
-      // 4. Billing Payment Status Listener
       const payCol = collection(db, 'artifacts', appId, 'public', 'data', 'payments');
       onSnapshot(payCol, (snap) => {
         const map = {};
@@ -963,7 +967,6 @@
       }
     };
 
-    // Detect secret admin email dynamically as user types
     document.getElementById('login-identifier').addEventListener('input', (e) => {
       const val = e.target.value;
       const picker = document.getElementById('admin-role-picker');
@@ -979,7 +982,6 @@
       const rawInput = document.getElementById('login-identifier').value.trim();
       if (!rawInput) return;
 
-      // Check Admin
       if (isSecretAdminEmail(rawInput)) {
         const op = document.getElementById('admin-operator-select').value;
         appState.session = {
@@ -995,7 +997,6 @@
         return;
       }
 
-      // Check Customer by Code or Email
       const found = appState.customers.find(c =>
         c.code.toLowerCase() === rawInput.toLowerCase() ||
         c.email.toLowerCase() === rawInput.toLowerCase()
@@ -1033,7 +1034,6 @@
         return;
       }
 
-      // Check if email already has a code
       const existing = appState.customers.find(c => c.email === email);
       if (existing) {
         appState.session = { role: 'customer', ...existing };
@@ -1042,7 +1042,6 @@
         return;
       }
 
-      // Generate unique continuous code HC-XXXX
       const randomNum = Math.floor(1000 + Math.random() * 9000);
       const newCode = `HC-${randomNum}`;
       const newCustomer = {
@@ -1070,7 +1069,6 @@
       const s = appState.session;
       const isAdmin = s.role === 'admin';
 
-      // Header UI
       const badge = document.getElementById('role-badge');
       badge.textContent = isAdmin ? `👑 ${s.adminOperator}` : `🧸 Customer`;
       badge.className = isAdmin
@@ -1090,7 +1088,6 @@
         document.getElementById('filter-customer').classList.remove('hidden');
         document.getElementById('filter-admin').classList.remove('hidden');
 
-        // Form defaults for admin
         document.getElementById('f-cust-name').readOnly = false;
         document.getElementById('f-cust-contact').readOnly = false;
         document.getElementById('f-cust-name').value = '';
@@ -1101,13 +1098,11 @@
         document.getElementById('header-code-box').classList.remove('hidden');
         document.getElementById('header-code-box').classList.add('flex');
         document.getElementById('display-user-code').textContent = s.code;
-        // Strict lock: hide & block settings tab for non-admin customers
         document.getElementById('nav-settings').classList.add('hidden');
         document.getElementById('section-settings').classList.add('hidden');
         document.getElementById('filter-customer').classList.add('hidden');
         document.getElementById('filter-admin').classList.add('hidden');
 
-        // Auto-fill & lock customer identity on form
         document.getElementById('f-cust-name').value = s.name;
         document.getElementById('f-cust-contact').value = s.contact;
         document.getElementById('f-uploader').value = `${s.name} (${s.code})`;
@@ -1158,12 +1153,10 @@
       document.getElementById('info-departure-date').textContent = formatDateID(departureDate);
       document.getElementById('info-rate').textContent = `Rp ${Number(ratePerGram).toLocaleString('id-ID')} / gr`;
 
-      // Update Settings form values
       document.getElementById('set-cutoff-date').value = cutoffDate;
       document.getElementById('set-departure-date').value = departureDate;
       document.getElementById('set-rate-per-gram').value = ratePerGram;
 
-      // Update Form Cut-Off Badge
       const badge = document.getElementById('form-trip-badge');
       if (isPastCutoff()) {
         badge.textContent = "⏭️ Lewat Cut-Off: Otomatis Ikut Next Trip";
@@ -1189,7 +1182,6 @@
 
     // --- Navigation ---
     window.switchMainTab = function(tabName) {
-      // Strict guard: prevent non-admin customers from opening trip/rate settings
       if (tabName === 'settings' && appState.session?.role !== 'admin') {
         showToast("Pengaturan jadwal trip & tarif khusus Admin ya! 🔒", "warning");
         tabName = 'form';
@@ -1212,7 +1204,7 @@
       if (tabName === 'billing') renderBillingSheet();
     };
 
-    // --- Image Compression Utility (Max 580px width, 0.60 JPEG quality, max 3 photos) ---
+    // --- Image Compression Utility ---
     function compressImageFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1233,7 +1225,6 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            // Compress to light JPEG
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.60);
             resolve(compressedDataUrl);
           };
@@ -1412,7 +1403,6 @@
         treatmentDetail = `Volume: ${lMl}`;
       }
 
-      // Determine customerCode owner
       let ownerCode = s.code;
       if (s.role === 'admin') {
         const matchedCust = appState.customers.find(c => c.name.toLowerCase() === custName.toLowerCase());
@@ -1462,7 +1452,6 @@
       try {
         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'packages'), payload);
         
-        // Reset form fields
         document.getElementById('f-resi').value = '';
         document.getElementById('f-item-name').value = '';
         document.getElementById('f-qty').value = '1';
@@ -1482,7 +1471,6 @@
       }
     };
 
-    // --- Visible Items Helper (Customer sees only own items; Admin sees all) ---
     function getScopedItems() {
       if (!appState.session) return [];
       if (appState.session.role === 'admin') return appState.items;
@@ -1517,7 +1505,6 @@
       sel.value = currentVal || 'ALL';
     }
 
-    // --- Tab 2: Render Pending Resi List ---
     function renderPendingResiList() {
       const container = document.getElementById('pending-resi-list');
       const noResiItems = getScopedItems().filter(it => !it.resi || it.status === 'Menunggu Resi');
@@ -1549,7 +1536,6 @@
       `).join('');
     }
 
-    // --- Tab 3: Render Rekapan & Tracking List ---
     window.resetFilters = function() {
       document.getElementById('filter-search').value = '';
       document.getElementById('filter-category').value = 'ALL';
@@ -1566,7 +1552,6 @@
       const isAdmin = appState.session?.role === 'admin';
       let list = [...getScopedItems()];
 
-      // Filters
       const q = document.getElementById('filter-search').value.trim().toLowerCase();
       const cat = document.getElementById('filter-category').value;
       const st = document.getElementById('filter-status').value;
@@ -1596,7 +1581,6 @@
         );
       }
 
-      // Sorting
       list.sort((a, b) => {
         if (sortMode === 'DATE_DESC') return new Date(b.createdAt) - new Date(a.createdAt);
         if (sortMode === 'DATE_ASC') return new Date(a.createdAt) - new Date(b.createdAt);
@@ -1617,7 +1601,6 @@
         return;
       }
 
-      // Count resi occurrences to highlight duplicate/combined resi
       const resiCounts = {};
       list.forEach(it => {
         if (it.resi) resiCounts[it.resi] = (resiCounts[it.resi] || 0) + 1;
@@ -1632,7 +1615,6 @@
           ? 0
           : (Number(item.weightGrams || 0) * Number(appState.settings.ratePerGram || 250)) + Number(item.extraFee || 0);
 
-        // Photos visibility rule: Customer sees Checkout, Arrived, Scale ONLY. Admin sees all 4 including Luggage!
         const photoBadges = [];
         if (item.photosCheckout?.length) photoBadges.push({ label: `Checkout (${item.photosCheckout.length})`, photos: item.photosCheckout, color: 'bg-amber-100 text-amber-800' });
         if (item.photosArrived?.length) photoBadges.push({ label: `Datang (${item.photosArrived.length})`, photos: item.photosArrived, color: 'bg-pink-100 text-pink-800' });
@@ -1643,7 +1625,6 @@
 
         return `
           <div class="cute-card rounded-3xl p-4 sm:p-5 border-2 ${isMultiResi ? 'border-amber-300' : 'border-purple-100'} transition hover:shadow-md">
-            <!-- Top Row: Status & Badges -->
             <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="px-3 py-1 rounded-full text-xs font-extrabold ${getStatusBadgeStyle(item.status)}">
@@ -1658,9 +1639,7 @@
               <span class="text-[11px] text-slate-400 font-semibold">${formatDateTimeID(item.createdAt)}</span>
             </div>
 
-            <!-- Main Content Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <!-- Left Info -->
               <div class="lg:col-span-7 space-y-1.5">
                 <div class="flex items-start justify-between gap-2">
                   <h3 class="font-display text-base sm:text-lg font-bold text-slate-800">
@@ -1698,7 +1677,6 @@
                 ` : ''}
               </div>
 
-              <!-- Right Warehouse & Cost Info -->
               <div class="lg:col-span-5 bg-slate-50/80 rounded-2xl p-3 border border-slate-200/80 flex flex-col justify-between gap-2">
                 <div class="grid grid-cols-2 gap-2 text-xs">
                   <div>
@@ -1720,7 +1698,6 @@
                   </div>
                 </div>
 
-                <!-- Photo Thumbnails Strip -->
                 <div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-200">
                   ${photoBadges.length ? photoBadges.map(pb => `
                     <button type="button" onclick="openItemDetailModal('${item.id}')" class="px-2 py-1 rounded-lg text-[10px] font-extrabold ${pb.color} hover:opacity-80">
@@ -1731,7 +1708,6 @@
               </div>
             </div>
 
-            <!-- Footer Actions & Audit Trail Preview -->
             <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
               <div class="text-[11px] text-slate-400 font-semibold">
                 🕒 ${item.auditLogs?.[item.auditLogs.length - 1] || `Diinput oleh ${item.uploaderName}`}
@@ -1783,7 +1759,6 @@
       return map[status] || 'bg-slate-100 text-slate-700';
     }
 
-    // --- Tab 4: Sheet Berat & Tagihan Akhir ---
     window.setBillingTripFilter = function(filter) {
       appState.billingTripFilter = filter;
       ['ACTIVE', 'NEXT', 'ALL'].forEach(f => {
@@ -1815,7 +1790,6 @@
         return;
       }
 
-      // Group by Customer
       const grouped = {};
       items.forEach(it => {
         const key = it.customerCode;
@@ -1847,7 +1821,6 @@
 
         return `
           <div class="bg-white border-2 border-teal-100 rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
-            <!-- Header Customer Billing -->
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
                 <div class="flex items-center gap-2">
@@ -1866,7 +1839,6 @@
               </div>
             </div>
 
-            <!-- Items Breakdown Table -->
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead>
@@ -1899,7 +1871,6 @@
               </table>
             </div>
 
-            <!-- Payment Status & WhatsApp Copy -->
             <div class="bg-pink-50/60 rounded-2xl p-3.5 border border-pink-100 flex flex-wrap items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-2 flex-1">
                 <span class="text-xs font-bold text-slate-700">Status Pembayaran:</span>
@@ -1992,7 +1963,6 @@
       showToast(`Format tagihan WA untuk ${custName} berhasil disalin! 📲`, "success");
     };
 
-    // --- Tab 5: Save Trip Settings (Admin) ---
     window.handleSaveSettings = async function(e) {
       e.preventDefault();
       if (!firebaseUser || appState.session?.role !== 'admin') {
@@ -2018,7 +1988,6 @@
       }
     };
 
-    // --- Modals Logic ---
     window.closeModal = function(id) {
       document.getElementById(id).classList.add('hidden');
     };
@@ -2028,7 +1997,6 @@
       document.getElementById('modal-image-zoom').classList.remove('hidden');
     };
 
-    // Modal: Admin Warehouse Edit
     window.openAdminEditModal = function(itemId) {
       const item = appState.items.find(i => i.id === itemId);
       if (!item) return;
@@ -2096,7 +2064,6 @@
       }
     };
 
-    // Modal: Customer Edit Detail (Unlocked items only)
     window.openCustEditModal = function(itemId) {
       const item = appState.items.find(i => i.id === itemId);
       if (!item) return;
@@ -2132,7 +2099,6 @@
       }
     };
 
-    // Modal: Ganti Resi / Isi Resi Susulan
     window.openChangeResiModal = function(itemId, isFirstTime) {
       const item = appState.items.find(i => i.id === itemId);
       if (!item) return;
@@ -2174,7 +2140,6 @@
       }
     };
 
-    // Modal: Retur (CO Ulang vs Retur & Refund)
     window.openReturModal = function(itemId) {
       const item = appState.items.find(i => i.id === itemId);
       if (!item) return;
@@ -2227,7 +2192,6 @@
       }
     };
 
-    // Modal: Audit Trail & Photo Gallery (Strict Privacy for Luggage Photos)
     window.openItemDetailModal = function(itemId) {
       const item = appState.items.find(i => i.id === itemId);
       if (!item) return;
@@ -2275,7 +2239,6 @@
       document.getElementById('modal-detail-audit').classList.remove('hidden');
     };
 
-    // --- Barcode Scanner (Camera BarcodeDetector API + Quick Focus Fallback) ---
     let scannerStream = null;
     let scannerInterval = null;
 
@@ -2323,7 +2286,6 @@
       document.getElementById('scanner-container').classList.add('hidden');
     };
 
-    // Boot Application on Window Load
     window.addEventListener('load', initApp);
   </script>
 </body>
