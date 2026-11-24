@@ -41,7 +41,7 @@
       background-position: 0 0, 20px 20px;
     }
     .cute-card {
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(8px);
       border: 2px solid #F3E8FF;
       box-shadow: 0 8px 24px -4px rgba(255, 143, 171, 0.15);
@@ -52,6 +52,33 @@
     .cute-btn:active {
       transform: scale(0.95);
     }
+    .sheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #ffffff;
+    }
+    .sheet-table th {
+      background: #fdf2f8;
+      color: #334155;
+      font-weight: 800;
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .sheet-table td {
+      border: 1px solid #cbd5e1;
+      padding: 7px 10px;
+      vertical-align: top;
+      color: #334155;
+    }
+    .sheet-table tbody tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+    .sheet-table tbody tr:hover {
+      background-color: #fdf4ff;
+    }
     @keyframes floatPlane {
       0%, 100% { transform: translateY(0px) rotate(-3deg); }
       50% { transform: translateY(-10px) rotate(3deg); }
@@ -59,10 +86,35 @@
     .animate-plane {
       animation: floatPlane 2.5s ease-in-out infinite;
     }
-    /* Custom scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #FFF5F7; }
     ::-webkit-scrollbar-thumb { background: #FFB3C6; border-radius: 999px; }
+
+    @media print {
+      body {
+        background: #ffffff !important;
+        background-image: none !important;
+      }
+      #splash-screen, #toast-container, #auth-view, header, nav, .grid.grid-cols-2.sm\:grid-cols-4, .no-print {
+        display: none !important;
+      }
+      #app-shell {
+        display: block !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      .cute-card {
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+      }
+      .sheet-table th, .sheet-table td {
+        border: 1px solid #64748b !important;
+        padding: 5px 7px !important;
+        font-size: 10px !important;
+      }
+    }
   </style>
 </head>
 <body class="text-slate-700 min-h-screen flex flex-col">
@@ -74,7 +126,6 @@
       <h1 class="font-display text-2xl font-bold text-pink-500 mb-1">Handcarry China - Indo</h1>
       <p class="text-xs text-slate-500 mb-6 font-semibold">Menyiapkan koper & menyinkronkan data paket lucu kamu~ 🌸</p>
       
-      <!-- Progress Bar -->
       <div class="w-full bg-pink-100 rounded-full h-5 p-1 overflow-hidden shadow-inner mb-2">
         <div id="loading-bar" class="bg-gradient-to-r from-pink-400 via-purple-400 to-teal-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
       </div>
@@ -100,7 +151,6 @@
         <p class="text-xs text-slate-500 mt-1">Masuk untuk cek paket, isi form checkout & lacak koper 💌</p>
       </div>
 
-      <!-- Mode Switcher -->
       <div class="grid grid-cols-2 gap-2 bg-purple-50 p-1.5 rounded-2xl mb-5">
         <button type="button" onclick="switchAuthTab('existing')" id="tab-auth-existing" class="cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-purple-600 shadow-sm">
           🔑 Sudah Punya Kode
@@ -110,7 +160,6 @@
         </button>
       </div>
 
-      <!-- Form A: Login dengan Kode Akses / Email -->
       <form id="form-login-existing" onsubmit="handleExistingLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1.5">Masukkan Kode Akses atau Email Terdaftar 🪪</label>
@@ -119,7 +168,6 @@
           <p class="text-[11px] text-slate-400 mt-1.5">💡 Gunakan kode akses berkelanjutan kamu untuk melihat semua pesananmu.</p>
         </div>
 
-        <!-- Hidden/Dynamic Admin Selector (Muncul otomatis hanya jika email cocok) -->
         <div id="admin-role-picker" class="hidden bg-purple-50 border-2 border-purple-200 rounded-2xl p-4 space-y-2">
           <div class="flex items-center gap-2 text-purple-700 font-bold text-xs">
             <span>👑 Mode Pengelola Terdeteksi! Pilih Petugas Aktif:</span>
@@ -136,7 +184,6 @@
         </button>
       </form>
 
-      <!-- Form B: Daftar Customer Baru -> Dapat Kode Akses Berkelanjutan -->
       <form id="form-register-customer" onsubmit="handleCustomerRegister(event)" class="hidden space-y-3.5">
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">Nama Panggilan / Penerima 🌷</label>
@@ -161,7 +208,7 @@
   </div>
 
   <!-- ==================== 3. MAIN APPLICATION SHELL ==================== -->
-  <div id="app-shell" class="hidden flex-1 flex flex-col max-w-6xl w-full mx-auto px-3 sm:px-6 py-4">
+  <div id="app-shell" class="hidden flex-1 flex flex-col max-w-7xl w-full mx-auto px-3 sm:px-6 py-4">
     
     <!-- Top Header Bar -->
     <header class="cute-card rounded-3xl p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -178,7 +225,6 @@
         </div>
       </div>
 
-      <!-- Trip Info Banner + User Code Copy -->
       <div class="flex flex-wrap items-center gap-2">
         <div id="header-code-box" class="hidden items-center gap-1.5 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-2xl">
           <span class="text-[11px] font-bold text-teal-700">Kode Kamu:</span>
@@ -186,7 +232,6 @@
           <button onclick="copyUserCode()" class="ml-1 text-xs bg-teal-500 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-teal-600">Salin</button>
         </div>
 
-        <!-- Admin Switcher Quick Dropdown -->
         <div id="header-admin-switcher" class="hidden items-center gap-1.5 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-2xl">
           <span class="text-xs">👑</span>
           <select id="active-admin-dropdown" onchange="changeActiveAdmin(this.value)" class="bg-transparent text-xs font-extrabold text-purple-700 focus:outline-none">
@@ -248,7 +293,6 @@
       <button onclick="switchMainTab('billing')" id="nav-billing" class="cute-btn whitespace-nowrap px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-white text-slate-600 border border-pink-100">
         💰 Sheet Berat & Tagihan
       </button>
-      <!-- Admin-only tab: hidden by default and strictly guarded in JS -->
       <button onclick="switchMainTab('settings')" id="nav-settings" class="hidden cute-btn whitespace-nowrap px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold bg-pastel-lavender/60 text-purple-800 border border-purple-200">
         ⚙️ Atur Trip & Rate (Admin)
       </button>
@@ -267,7 +311,6 @@
       </div>
 
       <form id="checkout-form" onsubmit="handleCheckoutSubmit(event)" class="space-y-5">
-        <!-- Identitas Customer & Pengupload -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-pink-50/50 p-4 rounded-2xl border border-pink-100">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Nama Customer 🧸 *</label>
@@ -286,7 +329,6 @@
           </div>
         </div>
 
-        <!-- Nomor Resi + Deteksi Resi Ganda -->
         <div class="bg-purple-50/50 p-4 rounded-2xl border border-purple-100 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <label class="block text-xs font-bold text-slate-700">Nomor Resi Ekspedisi China (Opsional / Bisa Susulan) 🚚</label>
@@ -295,7 +337,6 @@
           <input type="text" id="f-resi" oninput="checkDuplicateResi(this.value)" placeholder="Contoh: SF1234567890 atau YT987654321"
             class="w-full px-4 py-2.5 rounded-xl border-2 border-purple-200 text-sm bg-white focus:outline-none focus:border-purple-400 font-mono" />
           
-          <!-- Peringatan Resi Ganda / Paket Gabungan -->
           <div id="duplicate-resi-warning" class="hidden bg-amber-50 border-2 border-amber-300 rounded-2xl p-3.5 flex items-start gap-3">
             <span class="text-2xl">⚠️</span>
             <div class="flex-1">
@@ -309,7 +350,6 @@
           </div>
         </div>
 
-        <!-- Nama Barang & Jumlah -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="sm:col-span-2">
             <label class="block text-xs font-bold text-slate-700 mb-1">Nama / Deskripsi Barang 🎁 *</label>
@@ -323,7 +363,6 @@
           </div>
         </div>
 
-        <!-- Kategori & Perlakuan Dinamis -->
         <div class="bg-teal-50/50 p-4 rounded-2xl border border-teal-100 space-y-4">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-2">Pilih Jenis / Kategori Barang 🏷️ *</label>
@@ -359,11 +398,9 @@
             </div>
           </div>
 
-          <!-- Dynamic Sub-options Container -->
           <div id="category-dynamic-box" class="bg-white p-4 rounded-2xl border border-teal-200"></div>
         </div>
 
-        <!-- Upload Foto Checkout (Multiple + Auto Compress) -->
         <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-200 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -396,37 +433,42 @@
       <div id="pending-resi-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </section>
 
-    <!-- ==================== TAB 3: REKAPAN & TRACKING ==================== -->
+    <!-- ==================== TAB 3: REKAPAN & TRACKING (SPREADSHEET UI) ==================== -->
     <section id="section-tracking" class="hidden space-y-4">
-      <!-- Filter & Quick Barcode Search Bar -->
-      <div class="cute-card rounded-3xl p-4 sm:p-5 space-y-3">
+      <div class="cute-card rounded-3xl p-4 sm:p-5 space-y-3 no-print">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="font-display text-lg font-bold text-purple-700">🔍 Pencarian Cepat & Filter Paket</h2>
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="startBarcodeScanner()" class="cute-btn px-3 py-1.5 rounded-xl bg-teal-500 text-white text-xs font-bold flex items-center gap-1 shadow-sm">
-              📷 Scan Barcode HP
+          <div>
+            <h2 class="font-display text-lg font-bold text-purple-700">📋 Rekapan & Tracking (Mode Sheet)</h2>
+            <p class="text-[11px] text-slate-500">Tampilan tabel bergrid agar mudah dibaca, difilter, dan diupdate.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="downloadTrackingCSV()" class="cute-btn px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
+              📊 Download CSV (All Customer)
+            </button>
+            <button type="button" onclick="downloadCurrentPDF()" class="cute-btn px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs">
+              📄 Download PDF
+            </button>
+            <button type="button" onclick="startBarcodeScanner()" class="cute-btn px-3 py-1.5 rounded-xl bg-teal-500 text-white text-xs font-bold flex items-center gap-1 shadow-xs">
+              📷 Scan Barcode
             </button>
             <button type="button" onclick="resetFilters()" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-bold hover:bg-slate-200">
-              Reset Filter
+              Reset
             </button>
           </div>
         </div>
 
-        <!-- Quick Resi / Barcode Input -->
         <div class="relative">
-          <input type="text" id="filter-search" oninput="renderItemsList()" placeholder="Ketik / Scan Barcode Resi, Nama Barang, atau Nama Koper..."
-            class="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none text-sm font-semibold bg-white" />
-          <span class="absolute left-3.5 top-3.5 text-base">🔎</span>
+          <input type="text" id="filter-search" oninput="renderItemsList()" placeholder="Ketik / Scan Barcode Resi, Nama Barang, Customer, atau Koper..."
+            class="w-full pl-10 pr-4 py-2.5 rounded-2xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none text-sm font-semibold bg-white" />
+          <span class="absolute left-3.5 top-3 text-base">🔎</span>
         </div>
 
-        <!-- Camera Scanner Container (Hidden unless triggered) -->
         <div id="scanner-container" class="hidden bg-slate-900 rounded-2xl p-3 text-center space-y-2">
           <video id="scanner-video" class="w-full max-h-56 rounded-xl object-cover mx-auto" playsinline></video>
           <p class="text-xs text-white">Arahkan kamera ke barcode resi China...</p>
           <button type="button" onclick="stopBarcodeScanner()" class="px-4 py-1.5 rounded-xl bg-rose-500 text-white text-xs font-bold">Tutup Kamera</button>
         </div>
 
-        <!-- Filter Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           <select id="filter-category" onchange="renderItemsList()" class="px-3 py-2 rounded-xl border border-pink-200 text-xs font-bold bg-white">
             <option value="ALL">Semua Kategori</option>
@@ -455,7 +497,6 @@
             <option value="NEXT">⏭️ Ikut Next Trip</option>
           </select>
 
-          <!-- Admin-only Filters -->
           <select id="filter-customer" onchange="renderItemsList()" class="hidden px-3 py-2 rounded-xl border border-purple-200 text-xs font-bold bg-purple-50 text-purple-800">
             <option value="ALL">Semua Customer</option>
           </select>
@@ -477,34 +518,44 @@
         </div>
       </div>
 
-      <!-- Items Cards List -->
-      <div id="items-list-container" class="space-y-3"></div>
+      <!-- Spreadsheet Table Container -->
+      <div class="cute-card rounded-3xl p-4 sm:p-5">
+        <div id="items-list-container" class="overflow-x-auto"></div>
+      </div>
     </section>
 
-    <!-- ==================== TAB 4: SHEET BERAT & TAGIHAN AKHIR ==================== -->
+    <!-- ==================== TAB 4: SHEET BERAT & TAGIHAN AKHIR (SPREADSHEET UI) ==================== -->
     <section id="section-billing" class="hidden space-y-4">
-      <div class="cute-card rounded-3xl p-5">
+      <div class="cute-card rounded-3xl p-4 sm:p-5">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h2 class="font-display text-xl font-bold text-teal-700">💰 Sheet Berat & Tagihan Akhir</h2>
-            <p class="text-xs text-slate-500">Perhitungan otomatis berat + biaya tambahan manual (mengecualikan Retur & Refund / Ga Kebawa).</p>
+            <p class="text-xs text-slate-500">Format sheet all customer — berat × tarif + biaya tambahan (mengecualikan Retur & Refund / Ga Kebawa).</p>
           </div>
           
-          <!-- Filter Kloter Tagihan -->
-          <div class="flex bg-pink-50 p-1 rounded-2xl border border-pink-200">
-            <button onclick="setBillingTripFilter('ACTIVE')" id="bill-tab-active" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500 text-white">
-              ✈️ Trip Aktif
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <button onclick="downloadBillingCSV()" class="cute-btn px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
+              📊 Download Spreadsheet (CSV)
             </button>
-            <button onclick="setBillingTripFilter('NEXT')" id="bill-tab-next" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600">
-              ⏭️ Ikut Next Trip
+            <button onclick="downloadCurrentPDF()" class="cute-btn px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs">
+              📄 Download PDF
             </button>
-            <button onclick="setBillingTripFilter('ALL')" id="bill-tab-all" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600">
-              📊 Semua
-            </button>
+
+            <div class="flex bg-pink-50 p-1 rounded-2xl border border-pink-200">
+              <button onclick="setBillingTripFilter('ACTIVE')" id="bill-tab-active" class="px-3 py-1 rounded-xl text-xs font-bold bg-pink-500 text-white">
+                ✈️ Trip Aktif
+              </button>
+              <button onclick="setBillingTripFilter('NEXT')" id="bill-tab-next" class="px-3 py-1 rounded-xl text-xs font-bold text-slate-600">
+                ⏭️ Next Trip
+              </button>
+              <button onclick="setBillingTripFilter('ALL')" id="bill-tab-all" class="px-3 py-1 rounded-xl text-xs font-bold text-slate-600">
+                📊 Semua
+              </button>
+            </div>
           </div>
         </div>
 
-        <div id="billing-cards-container" class="space-y-4"></div>
+        <div id="billing-cards-container" class="overflow-x-auto space-y-4"></div>
       </div>
     </section>
 
@@ -587,7 +638,6 @@
           </div>
         </div>
 
-        <!-- Berat & Biaya Tambahan Manual -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-teal-50/70 p-3.5 rounded-2xl border border-teal-200">
           <div>
             <label class="block text-xs font-bold text-teal-800 mb-1">Berat Barang (gram) ⚖️</label>
@@ -601,7 +651,6 @@
           </div>
         </div>
 
-        <!-- Lokasi Packing & Pembagian Koper -->
         <div class="bg-purple-50/70 p-3.5 rounded-2xl border border-purple-200 space-y-3">
           <div class="text-xs font-extrabold text-purple-800">🧳 Detail Penempatan & Pembagian Koper</div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -623,9 +672,7 @@
           </div>
         </div>
 
-        <!-- Upload 3 Kategori Foto Admin -->
         <div class="space-y-3">
-          <!-- 1. Foto Barang Datang -->
           <div class="bg-pink-50/60 p-3 rounded-2xl border border-pink-200">
             <div class="flex justify-between items-center mb-1.5">
               <span class="text-xs font-bold text-pink-800">1. Foto Barang Datang (Terlihat Customer) 📦</span>
@@ -635,7 +682,6 @@
             <div id="preview-arrived-photos" class="flex flex-wrap gap-2 mt-2"></div>
           </div>
 
-          <!-- 2. Foto Timbangan -->
           <div class="bg-teal-50/60 p-3 rounded-2xl border border-teal-200">
             <div class="flex justify-between items-center mb-1.5">
               <span class="text-xs font-bold text-teal-800">2. Foto Timbangan (Terlihat Customer) ⚖️</span>
@@ -645,7 +691,6 @@
             <div id="preview-scale-photos" class="flex flex-wrap gap-2 mt-2"></div>
           </div>
 
-          <!-- 3. Foto Packing Koper (ADMIN ONLY!) -->
           <div class="bg-purple-100/70 p-3 rounded-2xl border-2 border-purple-300">
             <div class="flex justify-between items-center mb-1.5">
               <span class="text-xs font-extrabold text-purple-900">3. Foto Packing Koper 🔒 (KHUSUS ADMIN - Tersembunyi dari Customer)</span>
@@ -663,7 +708,7 @@
     </div>
   </div>
 
-  <!-- Modal 2: Customer Edit Detail (Hanya jika belum di-lock admin) -->
+  <!-- Modal 2: Customer Edit Detail -->
   <div id="modal-cust-edit" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3">
     <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border-2 border-pink-200">
       <div class="flex items-center justify-between border-b border-pink-100 pb-3 mb-4">
@@ -716,7 +761,7 @@
     </div>
   </div>
 
-  <!-- Modal 4: Ajukan Retur (CO Ulang vs Retur & Refund) -->
+  <!-- Modal 4: Ajukan Retur -->
   <div id="modal-retur" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3">
     <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border-2 border-rose-200">
       <div class="flex items-center justify-between border-b border-rose-100 pb-3 mb-4">
@@ -789,7 +834,6 @@
 
     const MAX_PHOTOS_PER_SLOT = 10;
 
-    // --- Secret Admin Gatekeeper (Evaluated silently without exposing string in UI) ---
     const _0xAdminHash = "b3V0Zml0bnlhbWFyaWtha2FAZ21haWwuY29t";
     const isSecretAdminEmail = (val) => {
       try {
@@ -799,7 +843,6 @@
       }
     };
 
-    // --- Splash Progress Helper ---
     function updateLoadingProgress(percent, statusText) {
       const bar = document.getElementById('loading-bar');
       const pct = document.getElementById('loading-percent');
@@ -809,7 +852,6 @@
       if (st && statusText) st.textContent = statusText;
     }
 
-    // --- Global State & Firebase Config ---
     let db, auth, firebaseUser = null;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'handcarry-cn-id-v1';
     const firebaseConfig = {
@@ -841,7 +883,6 @@
       }
     };
 
-    // --- Toast Notification ---
     window.showToast = function(msg, type = 'info') {
       const container = document.getElementById('toast-container');
       const colors = {
@@ -860,7 +901,6 @@
       }, 3200);
     };
 
-    // --- Initialize Firebase & Splash Sequence ---
     async function initApp() {
       try {
         updateLoadingProgress(15, "Memulai mesin pesawat... ✈️");
@@ -908,7 +948,6 @@
       }
     }
 
-    // --- Firestore Real-Time Listeners ---
     async function setupRealtimeListeners() {
       if (!firebaseUser) return;
 
@@ -946,7 +985,6 @@
       }, (err) => console.error("Payments sync error:", err));
     }
 
-    // --- Auth UI & Handlers ---
     window.switchAuthTab = function(mode) {
       const btnEx = document.getElementById('tab-auth-existing');
       const btnReg = document.getElementById('tab-auth-register');
@@ -1140,7 +1178,6 @@
       document.getElementById('admin-role-picker').classList.add('hidden');
     };
 
-    // --- Header & Trip Cut-off Logic ---
     function isPastCutoff(dateStr = null) {
       const checkDate = dateStr ? dateStr.split('T')[0] : new Date().toISOString().split('T')[0];
       return checkDate > appState.settings.cutoffDate;
@@ -1179,7 +1216,6 @@
              d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     }
 
-    // --- Navigation ---
     window.switchMainTab = function(tabName) {
       if (tabName === 'settings' && appState.session?.role !== 'admin') {
         showToast("Pengaturan jadwal trip & tarif khusus Admin ya! 🔒", "warning");
@@ -1203,7 +1239,6 @@
       if (tabName === 'billing') renderBillingSheet();
     };
 
-    // --- Image Compression Utility (Light JPEG for up to 10 photos per slot) ---
     function compressImageFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1295,7 +1330,6 @@
       }
     }
 
-    // --- Dynamic Category Options ---
     window.renderCategoryOptions = function() {
       const selected = document.querySelector('input[name="item-category"]:checked')?.value || 'Barang';
       const box = document.getElementById('category-dynamic-box');
@@ -1357,7 +1391,6 @@
       }
     };
 
-    // --- Duplicate Resi Detection ---
     window.checkDuplicateResi = function(val) {
       const clean = val.trim().toLowerCase();
       const warnBox = document.getElementById('duplicate-resi-warning');
@@ -1375,7 +1408,6 @@
       }
     };
 
-    // --- Submit Checkout Form ---
     window.handleCheckoutSubmit = async function(e) {
       e.preventDefault();
       if (!firebaseUser || !appState.session) return;
@@ -1546,18 +1578,17 @@
       renderItemsList();
     };
 
-    window.renderItemsList = function() {
-      const container = document.getElementById('items-list-container');
+    function getFilteredTrackingList() {
       const isAdmin = appState.session?.role === 'admin';
       let list = [...getScopedItems()];
 
-      const q = document.getElementById('filter-search').value.trim().toLowerCase();
-      const cat = document.getElementById('filter-category').value;
-      const st = document.getElementById('filter-status').value;
-      const trip = document.getElementById('filter-trip').value;
-      const custFilter = document.getElementById('filter-customer').value;
-      const adminFilter = document.getElementById('filter-admin').value;
-      const sortMode = document.getElementById('sort-items').value;
+      const q = document.getElementById('filter-search')?.value.trim().toLowerCase() || '';
+      const cat = document.getElementById('filter-category')?.value || 'ALL';
+      const st = document.getElementById('filter-status')?.value || 'ALL';
+      const trip = document.getElementById('filter-trip')?.value || 'ALL';
+      const custFilter = document.getElementById('filter-customer')?.value || 'ALL';
+      const adminFilter = document.getElementById('filter-admin')?.value || 'ALL';
+      const sortMode = document.getElementById('sort-items')?.value || 'DATE_DESC';
 
       if (q) {
         list = list.filter(it =>
@@ -1589,9 +1620,19 @@
         return 0;
       });
 
+      return list;
+    }
+
+    // --- Spreadsheet UI for Rekapan & Tracking ---
+    window.renderItemsList = function() {
+      const container = document.getElementById('items-list-container');
+      const isAdmin = appState.session?.role === 'admin';
+      const rate = Number(appState.settings.ratePerGram || 250);
+      const list = getFilteredTrackingList();
+
       if (!list.length) {
         container.innerHTML = `
-          <div class="cute-card rounded-3xl p-10 text-center">
+          <div class="py-10 text-center">
             <div class="text-5xl mb-3">🧸🔍</div>
             <h3 class="font-display text-lg font-bold text-slate-700">Belum ada paket yang cocok</h3>
             <p class="text-xs text-slate-500 mt-1">Coba ubah filter pencarian atau tambah barang baru di tab Upload Checkout.</p>
@@ -1607,140 +1648,84 @@
 
       const lockedStatuses = ['Sudah Sampai China', 'Sudah Ditimbang', 'Masuk Koper', 'Selesai / Tiba Indo'];
 
-      container.innerHTML = list.map(item => {
-        const isLockedForCust = !isAdmin && lockedStatuses.includes(item.status);
-        const isMultiResi = item.resi && (resiCounts[item.resi] > 1 || item.isCombinedPackage);
-        const itemCost = (item.status === 'Retur & Refund' || item.status === 'Ga Kebawa')
-          ? 0
-          : (Number(item.weightGrams || 0) * Number(appState.settings.ratePerGram || 250)) + Number(item.extraFee || 0);
+      container.innerHTML = `
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th class="w-10 text-center">No</th>
+              <th>Customer</th>
+              <th>Resi</th>
+              <th>Barang</th>
+              <th class="text-center">Qty</th>
+              <th>Kategori & Perlakuan</th>
+              <th>Status & Kloter</th>
+              <th class="text-right">Berat</th>
+              <th class="text-right">Tambahan</th>
+              <th class="text-right">Tagihan</th>
+              <th>Koper & Catatan</th>
+              <th class="no-print text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${list.map((item, idx) => {
+              const isLockedForCust = !isAdmin && lockedStatuses.includes(item.status);
+              const isMultiResi = item.resi && (resiCounts[item.resi] > 1 || item.isCombinedPackage);
+              const itemCost = (item.status === 'Retur & Refund' || item.status === 'Ga Kebawa')
+                ? 0
+                : (Number(item.weightGrams || 0) * rate) + Number(item.extraFee || 0);
 
-        const photoBadges = [];
-        if (item.photosCheckout?.length) photoBadges.push({ label: `Checkout (${item.photosCheckout.length})`, photos: item.photosCheckout, color: 'bg-amber-100 text-amber-800' });
-        if (item.photosArrived?.length) photoBadges.push({ label: `Datang (${item.photosArrived.length})`, photos: item.photosArrived, color: 'bg-pink-100 text-pink-800' });
-        if (item.photosScale?.length) photoBadges.push({ label: `Timbangan (${item.photosScale.length})`, photos: item.photosScale, color: 'bg-teal-100 text-teal-800' });
-        if (isAdmin && item.photosLuggage?.length) {
-          photoBadges.push({ label: `🔒 Packing Koper (${item.photosLuggage.length})`, photos: item.photosLuggage, color: 'bg-purple-200 text-purple-900' });
-        }
-
-        return `
-          <div class="cute-card rounded-3xl p-4 sm:p-5 border-2 ${isMultiResi ? 'border-amber-300' : 'border-purple-100'} transition hover:shadow-md">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="px-3 py-1 rounded-full text-xs font-extrabold ${getStatusBadgeStyle(item.status)}">
-                  ${item.status}
-                </span>
-                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${item.isNextTrip ? 'bg-amber-100 text-amber-800' : 'bg-teal-50 text-teal-700'}">
-                  ${item.isNextTrip ? '⏭️ Ikut Next Trip' : '✈️ Trip Aktif'}
-                </span>
-                ${isMultiResi ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-200 text-amber-900">📦 Paket Gabungan (1 Resi Banyak Barang)</span>` : ''}
-                ${isLockedForCust ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">🔒 Diproses Admin</span>` : ''}
-              </div>
-              <span class="text-[11px] text-slate-400 font-semibold">${formatDateTimeID(item.createdAt)}</span>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              <div class="lg:col-span-7 space-y-1.5">
-                <div class="flex items-start justify-between gap-2">
-                  <h3 class="font-display text-base sm:text-lg font-bold text-slate-800">
-                    ${item.itemName} <span class="text-pink-600">(${item.qty} pcs)</span>
-                  </h3>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                  <span class="font-bold text-purple-700">👤 ${item.customerName} <span class="text-slate-400">(${item.customerCode})</span></span>
-                  <span class="font-mono font-bold bg-slate-100 px-2 py-0.5 rounded-lg text-slate-700">
-                    🚚 Resi: ${item.resi || '<span class="text-amber-600 italic">Belum ada resi</span>'}
-                  </span>
-                </div>
-
-                ${item.previousResi ? `
-                  <div class="text-[11px] text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg inline-block font-semibold">
-                    🔄 Resi Sebelumnya: <span class="font-mono line-through">${item.previousResi}</span>
-                  </div>
-                ` : ''}
-
-                <p class="text-xs text-slate-600 bg-pink-50/60 px-3 py-1.5 rounded-xl border border-pink-100">
-                  <span class="font-bold text-pink-700">[${item.category}]</span> ${item.treatmentDetail}
-                </p>
-
-                ${item.returReason ? `
-                  <p class="text-xs text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 font-bold">
-                    ↩️ Keterangan Retur: ${item.returReason}
-                  </p>
-                ` : ''}
-
-                ${item.adminNote ? `
-                  <p class="text-xs text-purple-800 bg-purple-50 px-3 py-1.5 rounded-xl border border-purple-200 font-semibold">
-                    📝 Catatan Admin: ${item.adminNote}
-                  </p>
-                ` : ''}
-              </div>
-
-              <div class="lg:col-span-5 bg-slate-50/80 rounded-2xl p-3 border border-slate-200/80 flex flex-col justify-between gap-2">
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span class="text-[10px] font-bold text-slate-400 block">BERAT & BIAYA TAMBAHAN</span>
-                    <span class="font-extrabold text-slate-800">${item.weightGrams || 0} gr</span>
-                    ${item.extraFee ? `<span class="text-teal-600 font-bold"> + Rp ${Number(item.extraFee).toLocaleString('id-ID')}</span>` : ''}
-                  </div>
-                  <div>
-                    <span class="text-[10px] font-bold text-slate-400 block">ESTIMASI TAGIHAN</span>
-                    <span class="font-display font-bold text-sm text-teal-700">Rp ${itemCost.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div class="col-span-2">
-                    <span class="text-[10px] font-bold text-slate-400 block">LOKASI / PEMBAGIAN KOPER</span>
-                    <span class="font-bold text-purple-700">
-                      ${item.suitcaseOwner || item.packingDetail
-                        ? `🧳 ${item.suitcaseOwner || '-'} ${item.packingDetail ? `(${item.packingDetail})` : ''}`
-                        : '<span class="text-slate-400 font-normal">Belum masuk koper</span>'}
-                    </span>
-                  </div>
-                </div>
-
-                <div class="flex flex-wrap gap-1.5 pt-1 border-t border-slate-200">
-                  ${photoBadges.length ? photoBadges.map(pb => `
-                    <button type="button" onclick="openItemDetailModal('${item.id}')" class="px-2 py-1 rounded-lg text-[10px] font-extrabold ${pb.color} hover:opacity-80">
-                      📸 ${pb.label}
-                    </button>
-                  `).join('') : '<span class="text-[10px] text-slate-400">Belum ada lampiran foto</span>'}
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-              <div class="text-[11px] text-slate-400 font-semibold">
-                🕒 ${item.auditLogs?.[item.auditLogs.length - 1] || `Diinput oleh ${item.uploaderName}`}
-              </div>
-
-              <div class="flex flex-wrap items-center gap-1.5">
-                <button onclick="openItemDetailModal('${item.id}')" class="cute-btn px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
-                  📜 Foto & Log
-                </button>
-
-                <button onclick="openChangeResiModal('${item.id}', false)" class="cute-btn px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold">
-                  🔄 ${item.resi ? 'Ganti Resi' : 'Isi Resi'}
-                </button>
-
-                <button onclick="openReturModal('${item.id}')" class="cute-btn px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold">
-                  ↩️ Retur
-                </button>
-
-                ${!isAdmin && !isLockedForCust ? `
-                  <button onclick="openCustEditModal('${item.id}')" class="cute-btn px-3 py-1.5 rounded-xl bg-pink-100 hover:bg-pink-200 text-pink-700 text-xs font-bold">
-                    ✏️ Edit Detail
-                  </button>
-                ` : ''}
-
-                ${isAdmin ? `
-                  <button onclick="openAdminEditModal('${item.id}')" class="cute-btn px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-xs">
-                    👑 Edit Gudang / Koper
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+              return `
+                <tr>
+                  <td class="text-center font-bold text-slate-500">${idx + 1}</td>
+                  <td>
+                    <div class="font-bold text-slate-800">${escapeHtml(item.customerName)}</div>
+                    <div class="text-[10px] font-mono text-purple-700">${escapeHtml(item.customerCode)}</div>
+                  </td>
+                  <td>
+                    <div class="font-mono font-bold text-slate-800">${item.resi ? escapeHtml(item.resi) : '<span class="text-amber-600 italic">Belum ada</span>'}</div>
+                    ${item.previousResi ? `<div class="text-[10px] font-mono text-slate-400 line-through">Eks: ${escapeHtml(item.previousResi)}</div>` : ''}
+                    ${isMultiResi ? `<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">Gabungan</span>` : ''}
+                  </td>
+                  <td>
+                    <div class="font-bold text-slate-800">${escapeHtml(item.itemName)}</div>
+                    <div class="text-[10px] text-slate-400">${formatDateTimeID(item.createdAt)} • ${escapeHtml(item.uploaderName)}</div>
+                  </td>
+                  <td class="text-center font-extrabold">${item.qty}</td>
+                  <td>
+                    <span class="font-bold text-pink-700">[${escapeHtml(item.category)}]</span> ${escapeHtml(item.treatmentDetail)}
+                  </td>
+                  <td>
+                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${getStatusBadgeStyle(item.status)}">${escapeHtml(item.status)}</span>
+                    <div class="text-[10px] font-bold mt-1 ${item.isNextTrip ? 'text-amber-700' : 'text-teal-700'}">${item.isNextTrip ? '⏭️ Next Trip' : '✈️ Trip Aktif'}</div>
+                  </td>
+                  <td class="text-right font-bold">${item.weightGrams || 0} gr</td>
+                  <td class="text-right font-semibold">Rp ${Number(item.extraFee || 0).toLocaleString('id-ID')}</td>
+                  <td class="text-right font-extrabold text-teal-700">Rp ${itemCost.toLocaleString('id-ID')}</td>
+                  <td>
+                    <div class="text-[11px] font-bold text-purple-800">${item.suitcaseOwner ? escapeHtml(item.suitcaseOwner) : '-'}</div>
+                    ${item.packingDetail ? `<div class="text-[10px] text-slate-500">${escapeHtml(item.packingDetail)}</div>` : ''}
+                    ${item.adminNote ? `<div class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded mt-0.5">${escapeHtml(item.adminNote)}</div>` : ''}
+                    ${item.returReason ? `<div class="text-[10px] text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded mt-0.5">${escapeHtml(item.returReason)}</div>` : ''}
+                  </td>
+                  <td class="no-print whitespace-nowrap">
+                    <div class="flex flex-col gap-1">
+                      <div class="flex gap-1">
+                        <button onclick="openItemDetailModal('${item.id}')" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold">📜 Foto/Log</button>
+                        <button onclick="openChangeResiModal('${item.id}', false)" class="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold">🔄 Resi</button>
+                        <button onclick="openReturModal('${item.id}')" class="px-2 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 text-[10px] font-bold">↩️ Retur</button>
+                      </div>
+                      <div class="flex gap-1">
+                        ${!isAdmin && !isLockedForCust ? `<button onclick="openCustEditModal('${item.id}')" class="px-2 py-1 rounded bg-pink-100 hover:bg-pink-200 text-pink-800 text-[10px] font-bold">✏️ Edit</button>` : ''}
+                        ${isAdmin ? `<button onclick="openAdminEditModal('${item.id}')" class="w-full px-2 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold">👑 Gudang/Koper</button>` : ''}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
     };
 
     function getStatusBadgeStyle(status) {
@@ -1758,36 +1743,32 @@
       return map[status] || 'bg-slate-100 text-slate-700';
     }
 
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // --- Spreadsheet UI for Sheet Berat & Tagihan Akhir (All Customer) ---
     window.setBillingTripFilter = function(filter) {
       appState.billingTripFilter = filter;
       ['ACTIVE', 'NEXT', 'ALL'].forEach(f => {
         const btn = document.getElementById(`bill-tab-${f.toLowerCase()}`);
         btn.className = f === filter
-          ? "px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-500 text-white"
-          : "px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600";
+          ? "px-3 py-1 rounded-xl text-xs font-bold bg-pink-500 text-white"
+          : "px-3 py-1 rounded-xl text-xs font-bold text-slate-600";
       });
       renderBillingSheet();
     };
 
-    window.renderBillingSheet = function() {
-      const container = document.getElementById('billing-cards-container');
-      const isAdmin = appState.session?.role === 'admin';
+    function getBillingGroups() {
       const rate = Number(appState.settings.ratePerGram || 250);
       const tripFilter = appState.billingTripFilter;
-
       let items = getScopedItems();
       if (tripFilter === 'ACTIVE') items = items.filter(i => !i.isNextTrip);
       if (tripFilter === 'NEXT') items = items.filter(i => i.isNextTrip);
-
-      if (!items.length) {
-        container.innerHTML = `
-          <div class="text-center py-10 bg-teal-50/50 rounded-2xl border border-dashed border-teal-200">
-            <div class="text-4xl mb-2">🧾</div>
-            <p class="text-sm font-bold text-slate-600">Belum ada data tagihan pada filter kloter ini.</p>
-          </div>
-        `;
-        return;
-      }
 
       const grouped = {};
       items.forEach(it => {
@@ -1814,86 +1795,238 @@
         }
       });
 
-      container.innerHTML = Object.values(grouped).map(cust => {
-        const payDocId = `${cust.customerCode}_${tripFilter}`;
-        const payInfo = appState.payments[payDocId] || { status: 'Belum Lunas 🔴', note: '' };
+      return Object.values(grouped);
+    }
 
-        return `
-          <div class="bg-white border-2 border-teal-100 rounded-3xl p-4 sm:p-5 shadow-xs space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h3 class="font-display text-lg font-bold text-slate-800">${cust.customerName}</h3>
-                  <span class="text-xs font-bold px-2 py-0.5 rounded-lg bg-purple-50 text-purple-700">${cust.customerCode}</span>
-                </div>
-                <p class="text-xs text-slate-500">📱 ${cust.customerContact} • ${cust.items.length} item</p>
-              </div>
+    window.renderBillingSheet = function() {
+      const container = document.getElementById('billing-cards-container');
+      const isAdmin = appState.session?.role === 'admin';
+      const rate = Number(appState.settings.ratePerGram || 250);
+      const tripFilter = appState.billingTripFilter;
+      const groups = getBillingGroups();
 
-              <div class="text-right">
-                <div class="text-[11px] font-bold text-slate-400">TOTAL TAGIHAN (${tripFilter === 'NEXT' ? 'NEXT TRIP' : 'TRIP AKTIF'})</div>
-                <div class="font-display text-xl font-bold text-teal-600">Rp ${cust.grandTotal.toLocaleString('id-ID')}</div>
-                <div class="text-[11px] text-slate-500 font-semibold">
-                  Berat: ${cust.totalWeight} gr × Rp ${rate} ${cust.totalExtraFee ? `+ Tambahan Rp ${cust.totalExtraFee.toLocaleString('id-ID')}` : ''}
-                </div>
-              </div>
-            </div>
-
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-xs">
-                <thead>
-                  <tr class="text-slate-400 border-b border-slate-100">
-                    <th class="py-2 pr-2">Barang & Resi</th>
-                    <th class="py-2 px-2">Status</th>
-                    <th class="py-2 px-2 text-right">Berat</th>
-                    <th class="py-2 px-2 text-right">Biaya Tambahan</th>
-                    <th class="py-2 pl-2 text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-50">
-                  ${cust.items.map(it => {
-                    const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
-                    const sub = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
-                    return `
-                      <tr class="${excluded ? 'opacity-50 line-through' : ''}">
-                        <td class="py-2 pr-2 font-bold text-slate-700">
-                          ${it.itemName} (x${it.qty})
-                          <div class="text-[10px] font-mono text-slate-400">${it.resi || 'Tanpa Resi'}</div>
-                        </td>
-                        <td class="py-2 px-2"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeStyle(it.status)}">${it.status}</span></td>
-                        <td class="py-2 px-2 text-right font-semibold">${it.weightGrams || 0} gr</td>
-                        <td class="py-2 px-2 text-right font-semibold">Rp ${Number(it.extraFee || 0).toLocaleString('id-ID')}</td>
-                        <td class="py-2 pl-2 text-right font-bold text-teal-700">Rp ${sub.toLocaleString('id-ID')}</td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="bg-pink-50/60 rounded-2xl p-3.5 border border-pink-100 flex flex-wrap items-center justify-between gap-3">
-              <div class="flex flex-wrap items-center gap-2 flex-1">
-                <span class="text-xs font-bold text-slate-700">Status Pembayaran:</span>
-                ${isAdmin ? `
-                  <select onchange="updatePaymentStatus('${payDocId}', this.value, null)" class="px-3 py-1.5 rounded-xl border border-pink-200 text-xs font-extrabold bg-white">
-                    <option value="Belum Lunas 🔴" ${payInfo.status === 'Belum Lunas 🔴' ? 'selected' : ''}>Belum Lunas 🔴</option>
-                    <option value="DP 🟡" ${payInfo.status === 'DP 🟡' ? 'selected' : ''}>DP 🟡</option>
-                    <option value="Lunas 🟢" ${payInfo.status === 'Lunas 🟢' ? 'selected' : ''}>Lunas 🟢</option>
-                  </select>
-                  <input type="text" value="${payInfo.note || ''}" onblur="updatePaymentStatus('${payDocId}', null, this.value)"
-                    placeholder="Catatan transfer / bukti..." class="px-3 py-1.5 rounded-xl border border-pink-200 text-xs bg-white flex-1 min-w-[160px]" />
-                ` : `
-                  <span class="px-3 py-1 rounded-xl bg-white border border-pink-200 text-xs font-extrabold">${payInfo.status}</span>
-                  ${payInfo.note ? `<span class="text-xs text-slate-500">(${payInfo.note})</span>` : ''}
-                `}
-              </div>
-
-              <button onclick="copyWhatsAppInvoice('${cust.customerCode}', '${tripFilter}')" class="cute-btn px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-xs">
-                📲 Salin Format Tagihan WA
-              </button>
-            </div>
+      if (!groups.length) {
+        container.innerHTML = `
+          <div class="text-center py-10 bg-teal-50/50 rounded-2xl border border-dashed border-teal-200">
+            <div class="text-4xl mb-2">🧾</div>
+            <p class="text-sm font-bold text-slate-600">Belum ada data tagihan pada filter kloter ini.</p>
           </div>
         `;
-      }).join('');
+        return;
+      }
+
+      const allWeight = groups.reduce((s, g) => s + g.totalWeight, 0);
+      const allExtra = groups.reduce((s, g) => s + g.totalExtraFee, 0);
+      const allGrand = groups.reduce((s, g) => s + g.grandTotal, 0);
+
+      // Ringkasan All Customer dalam tabel spreadsheet
+      const summaryTableHtml = `
+        <div class="mb-5">
+          <div class="text-xs font-extrabold text-teal-800 mb-2">📊 Ringkasan Tagihan Semua Customer (${tripFilter === 'NEXT' ? 'Next Trip' : tripFilter === 'ACTIVE' ? 'Trip Aktif' : 'Semua Kloter'})</div>
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th class="w-10 text-center">No</th>
+                <th>Kode</th>
+                <th>Customer</th>
+                <th>Kontak</th>
+                <th class="text-center">Item</th>
+                <th class="text-right">Total Berat</th>
+                <th class="text-right">Biaya Tambahan</th>
+                <th class="text-right">Total Tagihan</th>
+                <th>Status Bayar</th>
+                <th class="no-print text-center">WA / Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${groups.map((cust, i) => {
+                const payDocId = `${cust.customerCode}_${tripFilter}`;
+                const payInfo = appState.payments[payDocId] || { status: 'Belum Lunas 🔴', note: '' };
+                return `
+                  <tr>
+                    <td class="text-center font-bold">${i + 1}</td>
+                    <td class="font-mono font-bold text-purple-700">${escapeHtml(cust.customerCode)}</td>
+                    <td class="font-bold text-slate-800">${escapeHtml(cust.customerName)}</td>
+                    <td>${escapeHtml(cust.customerContact)}</td>
+                    <td class="text-center font-bold">${cust.items.length}</td>
+                    <td class="text-right font-bold">${cust.totalWeight} gr</td>
+                    <td class="text-right">Rp ${cust.totalExtraFee.toLocaleString('id-ID')}</td>
+                    <td class="text-right font-extrabold text-teal-700">Rp ${cust.grandTotal.toLocaleString('id-ID')}</td>
+                    <td>
+                      ${isAdmin ? `
+                        <select onchange="updatePaymentStatus('${payDocId}', this.value, null)" class="px-2 py-1 rounded border border-slate-300 text-[11px] font-bold bg-white">
+                          <option value="Belum Lunas 🔴" ${payInfo.status === 'Belum Lunas 🔴' ? 'selected' : ''}>Belum Lunas 🔴</option>
+                          <option value="DP 🟡" ${payInfo.status === 'DP 🟡' ? 'selected' : ''}>DP 🟡</option>
+                          <option value="Lunas 🟢" ${payInfo.status === 'Lunas 🟢' ? 'selected' : ''}>Lunas 🟢</option>
+                        </select>
+                      ` : `<span class="font-bold">${escapeHtml(payInfo.status)}</span>`}
+                    </td>
+                    <td class="no-print">
+                      <div class="flex items-center gap-1">
+                        ${isAdmin ? `
+                          <input type="text" value="${escapeHtml(payInfo.note || '')}" onblur="updatePaymentStatus('${payDocId}', null, this.value)"
+                            placeholder="Catatan..." class="px-2 py-1 rounded border border-slate-300 text-[11px] w-24 bg-white" />
+                        ` : `<span class="text-[11px] text-slate-500">${escapeHtml(payInfo.note || '-')}</span>`}
+                        <button onclick="copyWhatsAppInvoice('${cust.customerCode}', '${tripFilter}')" class="px-2 py-1 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold">📲 WA</button>
+                      </div>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+              <tr class="bg-teal-50 font-extrabold">
+                <td colspan="5" class="text-right">TOTAL KESELURUHAN</td>
+                <td class="text-right">${allWeight} gr</td>
+                <td class="text-right">Rp ${allExtra.toLocaleString('id-ID')}</td>
+                <td class="text-right text-teal-800">Rp ${allGrand.toLocaleString('id-ID')}</td>
+                <td colspan="2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      // Rincian per item tiap customer dalam format tabel sheet
+      const detailTablesHtml = groups.map(cust => `
+        <div class="border border-slate-300 rounded-2xl p-3.5 bg-white space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-xs font-extrabold text-slate-800">
+              ${escapeHtml(cust.customerName)} <span class="font-mono text-purple-700">(${escapeHtml(cust.customerCode)})</span> • ${escapeHtml(cust.customerContact)}
+            </div>
+            <div class="text-xs font-extrabold text-teal-700">
+              Total: Rp ${cust.grandTotal.toLocaleString('id-ID')} (${cust.totalWeight} gr)
+            </div>
+          </div>
+          <table class="sheet-table">
+            <thead>
+              <tr>
+                <th class="w-10 text-center">No</th>
+                <th>Barang</th>
+                <th>Resi</th>
+                <th class="text-center">Qty</th>
+                <th>Status</th>
+                <th class="text-right">Berat</th>
+                <th class="text-right">Biaya Tambahan</th>
+                <th class="text-right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cust.items.map((it, idx) => {
+                const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
+                const sub = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
+                return `
+                  <tr class="${excluded ? 'opacity-60' : ''}">
+                    <td class="text-center">${idx + 1}</td>
+                    <td class="font-bold ${excluded ? 'line-through' : ''}">${escapeHtml(it.itemName)}</td>
+                    <td class="font-mono">${escapeHtml(it.resi || 'Tanpa Resi')}</td>
+                    <td class="text-center">${it.qty}</td>
+                    <td><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeStyle(it.status)}">${escapeHtml(it.status)}</span></td>
+                    <td class="text-right">${it.weightGrams || 0} gr</td>
+                    <td class="text-right">Rp ${Number(it.extraFee || 0).toLocaleString('id-ID')}</td>
+                    <td class="text-right font-bold text-teal-700">Rp ${sub.toLocaleString('id-ID')}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `).join('');
+
+      container.innerHTML = summaryTableHtml + detailTablesHtml;
+    };
+
+    // --- Export CSV (Spreadsheet) & PDF ---
+    function triggerCsvDownload(filename, rows) {
+      const csvContent = rows.map(row =>
+        row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')
+      ).join('\r\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    window.downloadTrackingCSV = function() {
+      const list = getFilteredTrackingList();
+      const rate = Number(appState.settings.ratePerGram || 250);
+      const rows = [
+        ['No', 'Kode Customer', 'Nama Customer', 'Kontak', 'Resi', 'Resi Sebelumnya', 'Barang', 'Qty', 'Kategori', 'Perlakuan', 'Status', 'Kloter', 'Berat (gr)', 'Biaya Tambahan (Rp)', 'Tagihan (Rp)', 'Koper', 'Catatan Admin', 'Keterangan Retur']
+      ];
+
+      list.forEach((it, idx) => {
+        const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
+        const cost = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
+        rows.push([
+          idx + 1,
+          it.customerCode,
+          it.customerName,
+          it.customerContact,
+          it.resi || '',
+          it.previousResi || '',
+          it.itemName,
+          it.qty,
+          it.category,
+          it.treatmentDetail,
+          it.status,
+          it.isNextTrip ? 'Next Trip' : 'Trip Aktif',
+          it.weightGrams || 0,
+          it.extraFee || 0,
+          cost,
+          it.suitcaseOwner || '',
+          it.adminNote || '',
+          it.returReason || ''
+        ]);
+      });
+
+      triggerCsvDownload(`rekapan-tracking-handcarry-${new Date().toISOString().split('T')[0]}.csv`, rows);
+      showToast("File CSV rekapan berhasil diunduh! 📊", "success");
+    };
+
+    window.downloadBillingCSV = function() {
+      const groups = getBillingGroups();
+      const rate = Number(appState.settings.ratePerGram || 250);
+      const tripFilter = appState.billingTripFilter;
+
+      const rows = [
+        ['Kode Customer', 'Nama Customer', 'Kontak', 'Kloter', 'Status Pembayaran', 'Catatan Bayar', 'Barang', 'Resi', 'Qty', 'Status Barang', 'Berat (gr)', 'Biaya Tambahan (Rp)', 'Subtotal (Rp)', 'Total Tagihan Customer (Rp)']
+      ];
+
+      groups.forEach(cust => {
+        const payDocId = `${cust.customerCode}_${tripFilter}`;
+        const payInfo = appState.payments[payDocId] || { status: 'Belum Lunas 🔴', note: '' };
+        cust.items.forEach(it => {
+          const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
+          const sub = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
+          rows.push([
+            cust.customerCode,
+            cust.customerName,
+            cust.customerContact,
+            tripFilter,
+            payInfo.status,
+            payInfo.note || '',
+            it.itemName,
+            it.resi || '',
+            it.qty,
+            it.status,
+            it.weightGrams || 0,
+            it.extraFee || 0,
+            sub,
+            cust.grandTotal
+          ]);
+        });
+      });
+
+      triggerCsvDownload(`sheet-berat-tagihan-all-customer-${tripFilter.toLowerCase()}.csv`, rows);
+      showToast("File CSV tagihan all customer berhasil diunduh! 📊", "success");
+    };
+
+    window.downloadCurrentPDF = function() {
+      showToast("Membuka jendela cetak / simpan sebagai PDF... 📄", "info");
+      window.print();
     };
 
     window.updatePaymentStatus = async function(payDocId, newStatus, newNote) {
@@ -2214,8 +2347,8 @@
       const content = document.getElementById('detail-audit-content');
       content.innerHTML = `
         <div class="bg-pink-50/70 p-3.5 rounded-2xl border border-pink-100">
-          <div class="font-display font-bold text-base text-slate-800">${item.itemName} (${item.qty} pcs)</div>
-          <div class="text-xs text-slate-600 mt-0.5">Resi: <span class="font-mono font-bold">${item.resi || '-'}</span> • Pengupload: <b>${item.uploaderName}</b></div>
+          <div class="font-display font-bold text-base text-slate-800">${escapeHtml(item.itemName)} (${item.qty} pcs)</div>
+          <div class="text-xs text-slate-600 mt-0.5">Resi: <span class="font-mono font-bold">${escapeHtml(item.resi || '-')}</span> • Pengupload: <b>${escapeHtml(item.uploaderName)}</b></div>
         </div>
 
         ${renderGallerySection('🛍️ Foto Checkout', item.photosCheckout, 'text-amber-700')}
@@ -2228,7 +2361,7 @@
           <ul class="space-y-1.5">
             ${(item.auditLogs || []).slice().reverse().map(log => `
               <li class="text-xs bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold">
-                • ${log}
+                • ${escapeHtml(log)}
               </li>
             `).join('')}
           </ul>
