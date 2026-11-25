@@ -197,7 +197,7 @@
       <div class="text-center mb-5">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-pink-100 text-3xl mb-3 shadow-sm">✈️</div>
         <h2 class="font-display text-2xl font-bold text-slate-800">Handcarry China - Indo</h2>
-        <p class="text-xs text-slate-500 mt-1">Masuk untuk kelola paket atau langsung cek tracking tanpa login 💌</p>
+        <p class="text-xs text-slate-500 mt-1">Masuk untuk kelola paket atau cek paket pakai kode / resi / nama 💌</p>
       </div>
 
       <div class="grid grid-cols-3 gap-1.5 bg-purple-50 p-1.5 rounded-2xl mb-5">
@@ -208,7 +208,7 @@
           ✨ Daftar Baru
         </button>
         <button type="button" onclick="switchAuthTab('guest-track')" id="tab-auth-guest-track" class="cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold text-slate-500">
-          🔗 Tanpa Login
+          🔎 Cek Kode/Resi
         </button>
       </div>
 
@@ -258,12 +258,17 @@
       </form>
 
       <div id="panel-guest-track" class="hidden space-y-3.5">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">Cari Kode Customer, Nama, Resi, atau Nama Barang 🔎</label>
-          <input type="text" id="guest-track-query" oninput="renderGuestTrackSearch()" placeholder="Contoh: HC-1234, Clarissa, SF123..., atau Cardigan..."
-            class="w-full px-4 py-2.5 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm bg-white" />
-          <p class="text-[11px] text-slate-400 mt-1">Bisa langsung buka halaman tracking tanpa login per customer atau per barang.</p>
-        </div>
+        <form onsubmit="handleGuestTrackSubmit(event)" class="space-y-2.5">
+          <label class="block text-xs font-bold text-slate-700">Kode Barang, No. Resi, Nama, atau Kode Customer 🔒</label>
+          <div class="flex gap-2">
+            <input type="text" id="guest-track-query" oninput="clearGuestResultsIfEmpty()" placeholder="Ketik kode barang / resi / nama / HC-XXXX..."
+              class="flex-1 px-4 py-2.5 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm bg-white" />
+            <button type="submit" class="cute-btn px-4 py-2.5 rounded-2xl bg-purple-600 text-white text-xs font-bold whitespace-nowrap">
+              Cari
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-400">Demi privasi, daftar paket tidak ditampilkan sebelum kamu memasukkan kata kunci.</p>
+        </form>
         <div id="guest-track-results" class="max-h-60 overflow-y-auto space-y-2"></div>
       </div>
     </div>
@@ -495,7 +500,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 class="font-display text-lg font-bold text-purple-700">📋 Rekapan & Tracking (Mode Sheet)</h2>
-            <p class="text-[11px] text-slate-500">Tampilan tabel bergrid + link tracking tanpa login per customer maupun per barang.</p>
+            <p class="text-[11px] text-slate-500">Tampilan tabel bergrid + link tracking per customer maupun per barang.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="downloadTrackingCSV()" class="cute-btn px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
@@ -921,6 +926,7 @@
 
     let activeTrackToken = getTrackParamFromUrl();
     let isDataReady = false;
+    let guestSubmittedQuery = '';
 
     let appState = {
       session: null,
@@ -1046,8 +1052,8 @@
         renderPublicTrackingView();
       } else if (appState.session) {
         refreshAllViews();
-      } else if (!document.getElementById('panel-guest-track')?.classList.contains('hidden')) {
-        renderGuestTrackSearch();
+      } else if (!document.getElementById('panel-guest-track')?.classList.contains('hidden') && guestSubmittedQuery) {
+        renderGuestTrackSearch(guestSubmittedQuery);
       }
     }
 
@@ -1146,25 +1152,52 @@
       }, (err) => console.error("Payments sync error:", err));
     }
 
-    // --- Pencarian Cepat Tracking Tanpa Login di Halaman Awal ---
-    window.renderGuestTrackSearch = function() {
+    // --- Pencarian Berbasis Kode Barang / Resi / Nama / Kode Customer (Privasi Terjaga) ---
+    window.clearGuestResultsIfEmpty = function() {
+      const q = (document.getElementById('guest-track-query')?.value || '').trim();
+      if (!q) {
+        guestSubmittedQuery = '';
+        const box = document.getElementById('guest-track-results');
+        if (box) box.innerHTML = '';
+      }
+    };
+
+    window.handleGuestTrackSubmit = function(e) {
+      e.preventDefault();
+      const q = (document.getElementById('guest-track-query')?.value || '').trim();
+      if (!q) {
+        showToast("Masukkan kode barang, resi, nama, atau kode customer dulu ya.", "warning");
+        return;
+      }
+      guestSubmittedQuery = q;
+      renderGuestTrackSearch(q);
+    };
+
+    window.renderGuestTrackSearch = function(queryOverride = null) {
       const box = document.getElementById('guest-track-results');
       if (!box) return;
-      if (!isDataReady) {
-        box.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">Memuat data paket...</div>`;
+
+      const q = (queryOverride !== null ? queryOverride : guestSubmittedQuery || '').trim().toLowerCase();
+      if (!q) {
+        box.innerHTML = '';
         return;
       }
 
-      const q = (document.getElementById('guest-track-query')?.value || '').trim().toLowerCase();
-      const matchedItems = appState.items.filter(it => !q ||
+      if (!isDataReady) {
+        box.innerHTML = `<div class="text-xs text-slate-400 text-center py-3">Memuat data...</div>`;
+        return;
+      }
+
+      const matchedItems = appState.items.filter(it =>
+        (it.id || '').toLowerCase().includes(q) ||
         (it.customerCode || '').toLowerCase().includes(q) ||
+        (it.customerName || '').toLowerCase() === q ||
         (it.customerName || '').toLowerCase().includes(q) ||
-        (it.resi || '').toLowerCase().includes(q) ||
-        (it.itemName || '').toLowerCase().includes(q)
+        (it.resi || '').toLowerCase().includes(q)
       );
 
       if (!matchedItems.length) {
-        box.innerHTML = `<div class="text-xs text-slate-500 text-center py-4 bg-slate-50 rounded-2xl border border-slate-200">Tidak ada paket yang cocok.</div>`;
+        box.innerHTML = `<div class="text-xs text-slate-500 text-center py-3 bg-slate-50 rounded-2xl border border-slate-200">Tidak ditemukan paket untuk "${escapeHtml(q)}".</div>`;
         return;
       }
 
@@ -1175,23 +1208,23 @@
         }
       });
 
-      const custButtonsHtml = Array.from(uniqueCusts.entries()).slice(0, 5).map(([code, name]) => `
+      const custButtonsHtml = Array.from(uniqueCusts.entries()).map(([code, name]) => `
         <button type="button" onclick="openTrackingPage('cust:${escapeHtml(code)}')"
           class="w-full text-left px-3.5 py-2.5 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 flex items-center justify-between gap-2">
           <div>
-            <div class="text-xs font-extrabold text-purple-900">👤 Semua Paket: ${escapeHtml(name)}</div>
+            <div class="text-xs font-extrabold text-purple-900">👤 Paket Customer: ${escapeHtml(name)}</div>
             <div class="text-[10px] font-mono text-purple-700">${escapeHtml(code)}</div>
           </div>
           <span class="text-[11px] font-bold text-purple-800">Buka Sheet →</span>
         </button>
       `).join('');
 
-      const itemButtonsHtml = matchedItems.slice(0, 8).map(it => `
+      const itemButtonsHtml = matchedItems.map(it => `
         <button type="button" onclick="openTrackingPage('item:${escapeHtml(it.id)}')"
           class="w-full text-left px-3.5 py-2.5 rounded-2xl bg-pink-50/70 hover:bg-pink-100/80 border border-pink-200 flex items-center justify-between gap-2">
           <div class="min-w-0">
             <div class="text-xs font-extrabold text-slate-800 truncate">📦 ${escapeHtml(it.itemName)} <span class="text-pink-600">(x${it.qty})</span></div>
-            <div class="text-[10px] text-slate-500 truncate">${escapeHtml(it.customerName)} • Resi: ${escapeHtml(it.resi || 'Belum ada')} • ${escapeHtml(it.status)}</div>
+            <div class="text-[10px] text-slate-500 truncate">Kode: ${escapeHtml(it.id)} • Resi: ${escapeHtml(it.resi || 'Belum ada')} • ${escapeHtml(it.status)}</div>
           </div>
           <span class="text-[11px] font-bold text-pink-700 whitespace-nowrap">Track →</span>
         </button>
@@ -1251,7 +1284,7 @@
         contentEl.innerHTML = `
           <div class="cute-card rounded-3xl p-4 sm:p-6 space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="text-xs font-extrabold text-purple-800">📦 Rincian Barang (Mode Sheet)</div>
+              <div class="text-xs font-extrabold text-purple-800">📦 Rincian Barang (Mode Sheet) • Kode Barang: <span class="font-mono">${escapeHtml(item.id)}</span></div>
               <button type="button" onclick="copyTextToClipboard('${custLink}', 'Link semua barang customer disalin! 🔗')" class="px-3 py-1 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-bold">
                 🔗 Link Semua Barang ${escapeHtml(item.customerName)}
               </button>
@@ -1360,6 +1393,7 @@
                 <thead>
                   <tr>
                     <th class="w-10 text-center">No</th>
+                    <th>Kode Barang</th>
                     <th>Resi</th>
                     <th>Barang</th>
                     <th class="text-center">Qty</th>
@@ -1381,10 +1415,11 @@
                     return `
                       <tr>
                         <td class="text-center font-bold">${idx + 1}</td>
+                        <td class="font-mono text-[11px]">${escapeHtml(it.id)}</td>
                         <td class="font-mono font-bold">${it.resi ? escapeHtml(it.resi) : '<span class="text-amber-600 italic">Belum ada</span>'}</td>
                         <td class="font-bold text-slate-800">${escapeHtml(it.itemName)}</td>
                         <td class="text-center font-extrabold">${it.qty}</td>
-                        <td><span class="font-bold text-pink-700">[${escapeHtml(it.category)}]</span> ${escapeHtml(it.treatmentDetail)}</td>
+                        <td><span class="font-bold text-pink-700">[${escapeHtml(it.category)}]</span> ${escapeHtml(item.treatmentDetail || it.treatmentDetail)}</td>
                         <td>
                           <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${getStatusBadgeStyle(it.status)}">${escapeHtml(it.status)}</span>
                           <div class="text-[10px] font-bold mt-1">${it.isNextTrip ? '⏭️ Next Trip' : '✈️ Trip Aktif'}</div>
@@ -1445,7 +1480,11 @@
       } else {
         btnGuest.className = "cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-pink-600 shadow-sm";
         panelGuest.classList.remove('hidden');
-        renderGuestTrackSearch();
+        if (guestSubmittedQuery) {
+          renderGuestTrackSearch(guestSubmittedQuery);
+        } else {
+          document.getElementById('guest-track-results').innerHTML = '';
+        }
       }
     };
 
@@ -2423,7 +2462,7 @@
     window.downloadTrackingCSV = function() {
       const list = getFilteredTrackingList();
       const rows = [
-        ['No', 'Kode Customer', 'Nama Customer', 'Kontak', 'Resi', 'Resi Sebelumnya', 'Barang', 'Qty', 'Kategori', 'Perlakuan', 'Status', 'Kloter', 'Berat (gr)', 'Tarif / gr (Rp)', 'Biaya Tambahan (Rp)', 'Tagihan (Rp)', 'Koper', 'Catatan Admin', 'Keterangan Retur', 'Link Tracking Barang', 'Link Tracking Customer']
+        ['No', 'Kode Barang', 'Kode Customer', 'Nama Customer', 'Kontak', 'Resi', 'Resi Sebelumnya', 'Barang', 'Qty', 'Kategori', 'Perlakuan', 'Status', 'Kloter', 'Berat (gr)', 'Tarif / gr (Rp)', 'Biaya Tambahan (Rp)', 'Tagihan (Rp)', 'Koper', 'Catatan Admin', 'Keterangan Retur', 'Link Tracking Barang', 'Link Tracking Customer']
       ];
 
       list.forEach((it, idx) => {
@@ -2431,6 +2470,7 @@
         const cost = computeItemCost(it);
         rows.push([
           idx + 1,
+          it.id,
           it.customerCode,
           it.customerName,
           it.customerContact,
@@ -2463,7 +2503,7 @@
       const tripFilter = appState.billingTripFilter;
 
       const rows = [
-        ['Kode Customer', 'Nama Customer', 'Kontak', 'Kloter', 'Status Pembayaran', 'Catatan Bayar', 'Barang', 'Resi', 'Qty', 'Status Barang', 'Berat (gr)', 'Tarif / gr (Rp)', 'Biaya Tambahan (Rp)', 'Subtotal (Rp)', 'Total Tagihan Customer (Rp)', 'Link Tracking Barang', 'Link Tracking Customer']
+        ['Kode Barang', 'Kode Customer', 'Nama Customer', 'Kontak', 'Kloter', 'Status Pembayaran', 'Catatan Bayar', 'Barang', 'Resi', 'Qty', 'Status Barang', 'Berat (gr)', 'Tarif / gr (Rp)', 'Biaya Tambahan (Rp)', 'Subtotal (Rp)', 'Total Tagihan Customer (Rp)', 'Link Tracking Barang', 'Link Tracking Customer']
       ];
 
       groups.forEach(cust => {
@@ -2473,6 +2513,7 @@
           const rate = getItemRate(it);
           const sub = computeItemCost(it);
           rows.push([
+            it.id,
             cust.customerCode,
             cust.customerName,
             cust.customerContact,
@@ -2819,7 +2860,7 @@
       content.innerHTML = `
         <div class="bg-pink-50/70 p-3.5 rounded-2xl border border-pink-100 space-y-2">
           <div class="font-display font-bold text-base text-slate-800">${escapeHtml(item.itemName)} (${item.qty} pcs)</div>
-          <div class="text-xs text-slate-600">Resi: <span class="font-mono font-bold">${escapeHtml(item.resi || '-')}</span>${isAdmin ? ` • Pengupload: <b>${escapeHtml(item.uploaderName)}</b>` : ''}</div>
+          <div class="text-xs text-slate-600">Kode: <span class="font-mono font-bold">${escapeHtml(item.id)}</span> • Resi: <span class="font-mono font-bold">${escapeHtml(item.resi || '-')}</span>${isAdmin ? ` • Pengupload: <b>${escapeHtml(item.uploaderName)}</b>` : ''}</div>
           <button type="button" onclick="copyTextToClipboard('${itemLink}', 'Link tracking barang disalin! 🔗')" class="px-3 py-1.5 rounded-xl bg-purple-600 text-white text-xs font-bold">
             🔗 Salin Link Tracking Barang Ini
           </button>
