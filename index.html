@@ -95,7 +95,7 @@
         background: #ffffff !important;
         background-image: none !important;
       }
-      #splash-screen, #toast-container, #auth-view, header, nav, .grid.grid-cols-2.sm\:grid-cols-4, .no-print {
+      #splash-screen, #toast-container, #auth-view, #guest-view, header, nav, .grid.grid-cols-2.sm\:grid-cols-4, .no-print {
         display: none !important;
       }
       #app-shell {
@@ -151,12 +151,15 @@
         <p class="text-xs text-slate-500 mt-1">Masuk untuk cek paket, isi form checkout & lacak koper 💌</p>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 bg-purple-50 p-1.5 rounded-2xl mb-5">
-        <button type="button" onclick="switchAuthTab('existing')" id="tab-auth-existing" class="cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-purple-600 shadow-sm">
-          🔑 Sudah Punya Kode
+      <div class="grid grid-cols-3 gap-1.5 bg-purple-50 p-1.5 rounded-2xl mb-5">
+        <button type="button" onclick="switchAuthTab('existing')" id="tab-auth-existing" class="cute-btn py-2 px-2 rounded-xl text-[11px] font-bold bg-white text-purple-600 shadow-sm">
+          🔑 Kode Akun
         </button>
-        <button type="button" onclick="switchAuthTab('register')" id="tab-auth-register" class="cute-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-500">
-          ✨ Daftar Customer Baru
+        <button type="button" onclick="switchAuthTab('register')" id="tab-auth-register" class="cute-btn py-2 px-2 rounded-xl text-[11px] font-bold text-slate-500">
+          ✨ Daftar Baru
+        </button>
+        <button type="button" onclick="switchAuthTab('guest')" id="tab-auth-guest" class="cute-btn py-2 px-2 rounded-xl text-[11px] font-bold text-slate-500">
+          👀 Cek Tanpa Login
         </button>
       </div>
 
@@ -204,6 +207,54 @@
           Buat Kode Akses Saya ✨
         </button>
       </form>
+
+      <form id="form-guest-lookup" onsubmit="handleGuestLookupSubmit(event)" class="hidden space-y-3.5">
+        <div class="bg-teal-50 border border-teal-200 rounded-2xl p-3 text-xs text-teal-900">
+          Cocok untuk customer yang datanya diinput admin dan ingin cek <b>foto barang, berat, status & tagihan</b> tanpa perlu buat akun/login.
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Kode Customer, Nama, atau No. Resi 🔎</label>
+          <input type="text" id="guest-lookup-input" required placeholder="Contoh: HC-8821, Clarissa, atau SF123456"
+            class="w-full px-4 py-2.5 rounded-2xl border-2 border-teal-200 focus:border-teal-400 focus:outline-none text-sm bg-white" />
+        </div>
+        <button type="submit" class="cute-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-display font-bold text-base shadow-md">
+          Lihat Detail & Foto 👀
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 2B. GUEST READ-ONLY VIEW (TANPA LOGIN) ==================== -->
+  <div id="guest-view" class="hidden flex-1 flex flex-col max-w-6xl w-full mx-auto px-3 sm:px-6 py-4 space-y-4">
+    <div class="cute-card rounded-3xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-teal-100 text-teal-800">👀 Mode Lihat Tanpa Login</span>
+          <span id="guest-query-label" class="font-mono text-xs font-bold text-purple-700"></span>
+        </div>
+        <h2 class="font-display text-lg sm:text-xl font-bold text-slate-800 mt-1">Rekapan Barang, Berat, Foto & Tagihan</h2>
+        <p class="text-xs text-slate-500">Tampilan baca-saja untuk customer. Foto packing koper internal admin tidak ditampilkan.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button" onclick="copyGuestShareLink()" class="cute-btn px-3 py-2 rounded-xl bg-teal-500 text-white text-xs font-bold">
+          🔗 Salin Link Cek
+        </button>
+        <button type="button" onclick="exitGuestView()" class="cute-btn px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+          Kembali ke Login
+        </button>
+      </div>
+    </div>
+
+    <div class="cute-card rounded-3xl p-4 sm:p-5 space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <input type="text" id="guest-filter-search" oninput="renderGuestReadOnlyView()" placeholder="Saring lagi berdasarkan resi atau nama barang..."
+          class="flex-1 min-w-[200px] px-4 py-2 rounded-xl border border-teal-200 text-xs sm:text-sm bg-white focus:outline-none" />
+        <div id="guest-totals-summary" class="text-xs font-extrabold text-teal-800 bg-teal-50 px-3.5 py-2 rounded-xl border border-teal-200">
+          0 Item • 0 gr • Rp 0
+        </div>
+      </div>
+
+      <div id="guest-results-container" class="overflow-x-auto space-y-4"></div>
     </div>
   </div>
 
@@ -230,6 +281,7 @@
           <span class="text-[11px] font-bold text-teal-700">Kode Kamu:</span>
           <span id="display-user-code" class="font-display font-bold text-sm text-teal-800">HC-0000</span>
           <button onclick="copyUserCode()" class="ml-1 text-xs bg-teal-500 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-teal-600">Salin</button>
+          <button onclick="copyCustomerGuestLink()" class="text-xs bg-cyan-600 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-cyan-700">Link Tamu</button>
         </div>
 
         <div id="header-admin-switcher" class="hidden items-center gap-1.5 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-2xl">
@@ -266,7 +318,7 @@
       <div class="bg-teal-50/90 border border-teal-200 rounded-2xl p-3 flex items-center gap-2.5">
         <span class="text-2xl">⚖️</span>
         <div>
-          <div class="text-[10px] font-bold uppercase text-teal-600">Tarif Aktif</div>
+          <div class="text-[10px] font-bold uppercase text-teal-600">Rate Default Trip</div>
           <div id="info-rate" class="font-display font-bold text-xs sm:text-sm text-slate-800">Rp 250 / gram</div>
         </div>
       </div>
@@ -350,7 +402,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div class="sm:col-span-2">
             <label class="block text-xs font-bold text-slate-700 mb-1">Nama / Deskripsi Barang 🎁 *</label>
             <input type="text" id="f-item-name" required placeholder="Contoh: Cardigan Pink / Photocard Stray Kids / Parfum"
@@ -360,6 +412,11 @@
             <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah (Qty) 🔢 *</label>
             <input type="number" id="f-qty" min="1" value="1" required
               class="w-full px-4 py-2.5 rounded-xl border border-pink-200 text-sm bg-white focus:outline-none focus:border-pink-400 font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Rate Barang (Rp/gr) ⚖️</label>
+            <input type="number" id="f-item-rate" min="1" step="1" required
+              class="w-full px-4 py-2.5 rounded-xl border border-teal-200 text-sm bg-white focus:outline-none focus:border-teal-400 font-extrabold text-teal-800" />
           </div>
         </div>
 
@@ -443,7 +500,7 @@
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button type="button" onclick="downloadTrackingCSV()" class="cute-btn px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
-              📊 Download CSV (All Customer)
+              📊 Download CSV
             </button>
             <button type="button" onclick="downloadCurrentPDF()" class="cute-btn px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs">
               📄 Download PDF
@@ -518,7 +575,6 @@
         </div>
       </div>
 
-      <!-- Spreadsheet Table Container -->
       <div class="cute-card rounded-3xl p-4 sm:p-5">
         <div id="items-list-container" class="overflow-x-auto"></div>
       </div>
@@ -530,7 +586,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h2 class="font-display text-xl font-bold text-teal-700">💰 Sheet Berat & Tagihan Akhir</h2>
-            <p class="text-xs text-slate-500">Format sheet all customer — berat × tarif + biaya tambahan (mengecualikan Retur & Refund / Ga Kebawa).</p>
+            <p id="billing-subtitle" class="text-xs text-slate-500">Format sheet — (berat × rate barang) + biaya tambahan (mengecualikan Retur & Refund / Ga Kebawa).</p>
           </div>
           
           <div class="flex flex-wrap items-center gap-2 no-print">
@@ -562,10 +618,10 @@
     <!-- ==================== TAB 5: PENGATURAN TRIP & RATE (ADMIN ONLY) ==================== -->
     <section id="section-settings" class="hidden cute-card rounded-3xl p-5 sm:p-7 max-w-2xl mx-auto w-full">
       <div class="flex items-center justify-between gap-2 mb-1">
-        <h2 class="font-display text-xl font-bold text-purple-700">⚙️ Pengaturan Jadwal Trip & Tarif (Admin Only)</h2>
+        <h2 class="font-display text-xl font-bold text-purple-700">⚙️ Pengaturan Jadwal Trip & Rate Default (Admin Only)</h2>
         <span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-purple-100 text-purple-800">🔒 Khusus Admin</span>
       </div>
-      <p class="text-xs text-slate-500 mb-5">Customer hanya melihat jadwal trip & tarif secara read-only. Perubahan di sini langsung tersinkronisasi untuk semua pengguna.</p>
+      <p class="text-xs text-slate-500 mb-5">Rate di sini menjadi nilai bawaan saat input barang baru; rate per item tetap bisa disesuaikan sendiri per barang atau customer.</p>
 
       <form onsubmit="handleSaveSettings(event)" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -583,16 +639,16 @@
         </div>
 
         <div class="bg-pastel-mint/70 p-4 rounded-2xl border border-teal-200">
-          <label class="block text-xs font-bold text-teal-800 mb-1">Tarif per Gram (Rp) ⚖️</label>
+          <label class="block text-xs font-bold text-teal-800 mb-1">Rate Default per Gram (Rp) ⚖️</label>
           <div class="flex flex-wrap items-center gap-3">
             <input type="number" id="set-rate-per-gram" min="1" required
               class="w-40 px-4 py-2.5 rounded-xl border-2 border-teal-300 text-base font-extrabold bg-white text-teal-800" />
-            <span class="text-xs font-bold text-teal-700">Rp / gram (Contoh: 250 = Rp 250.000 / kg)</span>
+            <span class="text-xs font-bold text-teal-700">Rp / gram (bawaan awal barang baru)</span>
           </div>
         </div>
 
         <button type="submit" class="cute-btn w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-display font-bold text-base shadow-md">
-          Simpan Pengaturan Trip & Tarif 💾✨
+          Simpan Pengaturan Trip & Rate 💾✨
         </button>
       </form>
     </section>
@@ -605,7 +661,7 @@
     <div class="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border-2 border-purple-200 my-auto max-h-[92vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-purple-100 pb-3 mb-4">
         <div>
-          <h3 class="font-display text-lg font-bold text-purple-700">👑 Edit Gudang, Berat & Packing Koper</h3>
+          <h3 class="font-display text-lg font-bold text-purple-700">👑 Edit Gudang, Rate, Berat & Packing Koper</h3>
           <p id="admin-edit-subtitle" class="text-xs text-slate-500 font-semibold"></p>
         </div>
         <button onclick="closeModal('modal-admin-edit')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-600 font-bold">✕</button>
@@ -638,15 +694,20 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-teal-50/70 p-3.5 rounded-2xl border border-teal-200">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-teal-50/70 p-3.5 rounded-2xl border border-teal-200">
           <div>
             <label class="block text-xs font-bold text-teal-800 mb-1">Berat Barang (gram) ⚖️</label>
             <input type="number" id="ae-weight" min="0" step="1" placeholder="Contoh: 350"
               class="w-full px-3.5 py-2 rounded-xl border border-teal-300 text-sm font-extrabold bg-white" />
           </div>
           <div>
-            <label class="block text-xs font-bold text-teal-800 mb-1">Biaya Tambahan Manual (Rp) 💵</label>
-            <input type="number" id="ae-extra-fee" min="0" step="500" placeholder="Contoh: 15000 (bubble/tax)"
+            <label class="block text-xs font-bold text-teal-800 mb-1">Rate Barang (Rp / gr) 🏷️</label>
+            <input type="number" id="ae-rate" min="1" step="1" placeholder="Contoh: 250"
+              class="w-full px-3.5 py-2 rounded-xl border border-teal-300 text-sm font-extrabold bg-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-teal-800 mb-1">Biaya Tambahan (Rp) 💵</label>
+            <input type="number" id="ae-extra-fee" min="0" step="500" placeholder="Contoh: 15000"
               class="w-full px-3.5 py-2 rounded-xl border border-teal-300 text-sm font-extrabold bg-white" />
           </div>
         </div>
@@ -830,7 +891,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, addDoc, updateDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, addDoc, updateDoc, deleteDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     const MAX_PHOTOS_PER_SLOT = 10;
 
@@ -866,6 +927,7 @@
 
     let appState = {
       session: null,
+      guestQuery: '',
       settings: {
         cutoffDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
         departureDate: new Date(Date.now() + 10 * 86400000).toISOString().split('T')[0],
@@ -882,6 +944,21 @@
         luggage: []
       }
     };
+
+    function getItemRate(item) {
+      const val = Number(item?.ratePerGram);
+      if (!Number.isNaN(val) && val > 0) return val;
+      return Number(appState.settings.ratePerGram || 250);
+    }
+
+    function computeItemCost(item) {
+      if (!item) return 0;
+      if (item.status === 'Retur & Refund' || item.status === 'Ga Kebawa') return 0;
+      const w = Number(item.weightGrams || 0);
+      const rate = getItemRate(item);
+      const extra = Number(item.extraFee || 0);
+      return (w * rate) + extra;
+    }
 
     window.showToast = function(msg, type = 'info') {
       const container = document.getElementById('toast-container');
@@ -927,6 +1004,17 @@
         updateLoadingProgress(90, "Menyiapkan ruang koper pastel... 🧳");
         renderCategoryOptions();
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const cekParam = (urlParams.get('cek') || urlParams.get('paket') || '').trim();
+        if (cekParam) {
+          appState.guestQuery = cekParam;
+          document.getElementById('splash-screen').classList.add('hidden');
+          document.getElementById('auth-view').classList.add('hidden');
+          document.getElementById('guest-view').classList.remove('hidden');
+          renderGuestReadOnlyView();
+          return;
+        }
+
         setTimeout(() => {
           updateLoadingProgress(100, "Siap berangkat! ✨");
           setTimeout(() => {
@@ -959,7 +1047,8 @@
           setDoc(settingsRef, appState.settings).catch(() => {});
         }
         updateHeaderTripUI();
-        if (appState.session) renderBillingSheet();
+        if (!document.getElementById('guest-view').classList.contains('hidden')) renderGuestReadOnlyView();
+        if (appState.session) refreshAllViews();
       }, (err) => console.error("Settings sync error:", err));
 
       const custCol = collection(db, 'artifacts', appId, 'public', 'data', 'customers');
@@ -971,6 +1060,7 @@
       const itemsCol = collection(db, 'artifacts', appId, 'public', 'data', 'packages');
       onSnapshot(itemsCol, (snap) => {
         appState.items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!document.getElementById('guest-view').classList.contains('hidden')) renderGuestReadOnlyView();
         if (appState.session) {
           refreshAllViews();
         }
@@ -981,6 +1071,7 @@
         const map = {};
         snap.docs.forEach(d => { map[d.id] = d.data(); });
         appState.payments = map;
+        if (!document.getElementById('guest-view').classList.contains('hidden')) renderGuestReadOnlyView();
         if (appState.session) renderBillingSheet();
       }, (err) => console.error("Payments sync error:", err));
     }
@@ -988,20 +1079,169 @@
     window.switchAuthTab = function(mode) {
       const btnEx = document.getElementById('tab-auth-existing');
       const btnReg = document.getElementById('tab-auth-register');
+      const btnGst = document.getElementById('tab-auth-guest');
+
       const formEx = document.getElementById('form-login-existing');
       const formReg = document.getElementById('form-register-customer');
+      const formGst = document.getElementById('form-guest-lookup');
+
+      const inactiveClass = "cute-btn py-2 px-2 rounded-xl text-[11px] font-bold text-slate-500";
+      btnEx.className = inactiveClass;
+      btnReg.className = inactiveClass;
+      btnGst.className = inactiveClass;
+
+      formEx.classList.add('hidden');
+      formReg.classList.add('hidden');
+      formGst.classList.add('hidden');
 
       if (mode === 'existing') {
-        btnEx.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-purple-600 shadow-sm";
-        btnReg.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-500";
+        btnEx.className = "cute-btn py-2 px-2 rounded-xl text-[11px] font-bold bg-white text-purple-600 shadow-sm";
         formEx.classList.remove('hidden');
-        formReg.classList.add('hidden');
-      } else {
-        btnReg.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-teal-600 shadow-sm";
-        btnEx.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-500";
+      } else if (mode === 'register') {
+        btnReg.className = "cute-btn py-2 px-2 rounded-xl text-[11px] font-bold bg-white text-teal-600 shadow-sm";
         formReg.classList.remove('hidden');
-        formEx.classList.add('hidden');
+      } else {
+        btnGst.className = "cute-btn py-2 px-2 rounded-xl text-[11px] font-bold bg-white text-cyan-700 shadow-sm";
+        formGst.classList.remove('hidden');
       }
+    };
+
+    window.handleGuestLookupSubmit = function(e) {
+      e.preventDefault();
+      const q = document.getElementById('guest-lookup-input').value.trim();
+      if (!q) return;
+      appState.guestQuery = q;
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('guest-view').classList.remove('hidden');
+      renderGuestReadOnlyView();
+    };
+
+    window.exitGuestView = function() {
+      appState.guestQuery = '';
+      document.getElementById('guest-view').classList.add('hidden');
+      document.getElementById('auth-view').classList.remove('hidden');
+    };
+
+    function copyTextToClipboard(text, successMsg) {
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      document.execCommand('copy');
+      document.body.removeChild(temp);
+      showToast(successMsg, "success");
+    }
+
+    window.copyGuestShareLink = function() {
+      const baseUrl = window.location.origin + window.location.pathname;
+      const link = `${baseUrl}?cek=${encodeURIComponent(appState.guestQuery)}`;
+      copyTextToClipboard(link, "Link cek paket tanpa login berhasil disalin! 🔗");
+    };
+
+    window.copyCustomerGuestLink = function() {
+      const code = appState.session?.code || '';
+      if (!code) return;
+      const baseUrl = window.location.origin + window.location.pathname;
+      const link = `${baseUrl}?cek=${encodeURIComponent(code)}`;
+      copyTextToClipboard(link, `Link cek untuk customer (${code}) disalin! 🔗`);
+    };
+
+    window.renderGuestReadOnlyView = function() {
+      const queryMain = (appState.guestQuery || '').trim().toLowerCase();
+      const querySub = (document.getElementById('guest-filter-search')?.value || '').trim().toLowerCase();
+      document.getElementById('guest-query-label').textContent = `Pencarian: "${appState.guestQuery}"`;
+
+      let matched = appState.items.filter(it =>
+        (it.id || '').toLowerCase() === queryMain ||
+        (it.customerCode || '').toLowerCase() === queryMain ||
+        (it.customerName || '').toLowerCase().includes(queryMain) ||
+        (it.resi || '').toLowerCase().includes(queryMain) ||
+        (it.itemName || '').toLowerCase().includes(queryMain)
+      );
+
+      if (querySub) {
+        matched = matched.filter(it =>
+          (it.resi || '').toLowerCase().includes(querySub) ||
+          (it.itemName || '').toLowerCase().includes(querySub) ||
+          (it.customerName || '').toLowerCase().includes(querySub)
+        );
+      }
+
+      const totalWeight = matched.reduce((s, it) => {
+        const ex = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
+        return s + (ex ? 0 : Number(it.weightGrams || 0));
+      }, 0);
+      const totalCost = matched.reduce((s, it) => s + computeItemCost(it), 0);
+
+      document.getElementById('guest-totals-summary').textContent =
+        `${matched.length} Item • ${totalWeight} gr • Rp ${totalCost.toLocaleString('id-ID')}`;
+
+      const container = document.getElementById('guest-results-container');
+      if (!matched.length) {
+        container.innerHTML = `
+          <div class="text-center py-10 bg-teal-50/40 rounded-2xl border border-dashed border-teal-200">
+            <div class="text-4xl mb-2">🔍</div>
+            <p class="text-sm font-bold text-slate-600">Data dengan kata kunci "${escapeHtml(appState.guestQuery)}" tidak ditemukan.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th class="w-10 text-center">No</th>
+              <th>Customer</th>
+              <th>Resi</th>
+              <th>Barang & Detail</th>
+              <th class="text-center">Qty</th>
+              <th>Status & Koper</th>
+              <th class="text-right">Berat</th>
+              <th class="text-right">Rate</th>
+              <th class="text-right">Tambahan</th>
+              <th class="text-right">Tagihan</th>
+              <th class="text-center">Foto / Log</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${matched.map((item, idx) => {
+              const rate = getItemRate(item);
+              const cost = computeItemCost(item);
+              const photoCount = (item.photosCheckout?.length || 0) + (item.photosArrived?.length || 0) + (item.photosScale?.length || 0);
+              return `
+                <tr>
+                  <td class="text-center font-bold">${idx + 1}</td>
+                  <td>
+                    <div class="font-bold text-slate-800">${escapeHtml(item.customerName)}</div>
+                    <div class="text-[10px] font-mono text-purple-700">${escapeHtml(item.customerCode)}</div>
+                  </td>
+                  <td class="font-mono font-bold">${item.resi ? escapeHtml(item.resi) : '<span class="text-amber-600">Belum ada</span>'}</td>
+                  <td>
+                    <div class="font-bold text-slate-800">${escapeHtml(item.itemName)}</div>
+                    <div class="text-[10px] text-slate-500">[${escapeHtml(item.category)}] ${escapeHtml(item.treatmentDetail)}</div>
+                    ${item.adminNote ? `<div class="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded mt-0.5">${escapeHtml(item.adminNote)}</div>` : ''}
+                  </td>
+                  <td class="text-center font-extrabold">${item.qty}</td>
+                  <td>
+                    <span class="inline-block px-2 py-0.5 rounded-full text-[10px] font-extrabold ${getStatusBadgeStyle(item.status)}">${escapeHtml(item.status)}</span>
+                    <div class="text-[10px] font-bold text-purple-800 mt-1">${item.suitcaseOwner ? escapeHtml(item.suitcaseOwner) : '-'}</div>
+                  </td>
+                  <td class="text-right font-bold">${item.weightGrams || 0} gr</td>
+                  <td class="text-right">Rp ${rate.toLocaleString('id-ID')}</td>
+                  <td class="text-right">Rp ${Number(item.extraFee || 0).toLocaleString('id-ID')}</td>
+                  <td class="text-right font-extrabold text-teal-700">Rp ${cost.toLocaleString('id-ID')}</td>
+                  <td class="text-center">
+                    <button type="button" onclick="openItemDetailModal('${item.id}', true)" class="px-2.5 py-1 rounded-lg bg-teal-100 hover:bg-teal-200 text-teal-900 text-[10px] font-bold whitespace-nowrap">
+                      📸 Foto (${photoCount})
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
     };
 
     document.getElementById('login-identifier').addEventListener('input', (e) => {
@@ -1040,7 +1280,7 @@
       );
 
       if (!found) {
-        showToast("Kode akses / email belum terdaftar. Silakan daftar customer baru dulu ya~ 🌸", "warning");
+        showToast("Kode akses / email belum terdaftar. Silakan daftar atau pakai tab Cek Tanpa Login ya~ 🌸", "warning");
         return;
       }
 
@@ -1064,7 +1304,7 @@
       const email = document.getElementById('reg-email').value.trim().toLowerCase();
 
       if (isSecretAdminEmail(email)) {
-        showToast("Gunakan tab 'Sudah Punya Kode' untuk masuk dengan email ini.", "info");
+        showToast("Gunakan tab 'Kode Akun' untuk masuk dengan email ini.", "info");
         switchAuthTab('existing');
         document.getElementById('login-identifier').value = email;
         document.getElementById('admin-role-picker').classList.remove('hidden');
@@ -1101,6 +1341,7 @@
 
     function enterMainApp() {
       document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('guest-view').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
 
       const s = appState.session;
@@ -1115,6 +1356,10 @@
       document.getElementById('user-greeting').textContent = isAdmin
         ? `Mode Pengelola Aktif • Mengelola seluruh paket & koper`
         : `Halo, ${s.name} (${s.contact})`;
+
+      document.getElementById('billing-subtitle').textContent = isAdmin
+        ? "Format sheet all customer — (berat × rate barang) + biaya tambahan (mengecualikan Retur & Refund / Ga Kebawa)."
+        : "Format sheet tagihan kamu — (berat × rate barang) + biaya tambahan (mengecualikan Retur & Refund / Ga Kebawa).";
 
       if (isAdmin) {
         document.getElementById('header-code-box').classList.add('hidden');
@@ -1145,6 +1390,7 @@
         document.getElementById('f-uploader').value = `${s.name} (${s.code})`;
       }
 
+      document.getElementById('f-item-rate').value = Number(appState.settings.ratePerGram || 250);
       updateHeaderTripUI();
       refreshAllViews();
     }
@@ -1161,13 +1407,7 @@
 
     window.copyUserCode = function() {
       const code = appState.session?.code || '';
-      const temp = document.createElement('textarea');
-      temp.value = code;
-      document.body.appendChild(temp);
-      temp.select();
-      document.execCommand('copy');
-      document.body.removeChild(temp);
-      showToast(`Kode akses ${code} berhasil disalin! 📋`, "success");
+      copyTextToClipboard(code, `Kode akses ${code} berhasil disalin! 📋`);
     };
 
     window.handleLogout = function() {
@@ -1192,6 +1432,11 @@
       document.getElementById('set-cutoff-date').value = cutoffDate;
       document.getElementById('set-departure-date').value = departureDate;
       document.getElementById('set-rate-per-gram').value = ratePerGram;
+
+      const rateInput = document.getElementById('f-item-rate');
+      if (rateInput && (!rateInput.value || Number(rateInput.value) <= 0)) {
+        rateInput.value = Number(ratePerGram || 250);
+      }
 
       const badge = document.getElementById('form-trip-badge');
       if (isPastCutoff()) {
@@ -1420,6 +1665,7 @@
       const isCombined = document.getElementById('f-is-combined').checked;
       const itemName = document.getElementById('f-item-name').value.trim();
       const qty = parseInt(document.getElementById('f-qty').value, 10) || 1;
+      const ratePerGram = parseFloat(document.getElementById('f-item-rate').value) || Number(appState.settings.ratePerGram || 250);
       const category = document.querySelector('input[name="item-category"]:checked').value;
 
       let treatmentDetail = '';
@@ -1454,6 +1700,7 @@
         isCombinedPackage: isCombined,
         itemName,
         qty,
+        ratePerGram,
         category,
         treatmentDetail,
         status: initialStatus,
@@ -1472,7 +1719,7 @@
         updatedAt: nowIso,
         lastUpdatedBy: uploader,
         auditLogs: [
-          `Diinput oleh ${uploader} - ${formatDateTimeID(nowIso)}`
+          `Diinput oleh ${uploader} (Rate Rp ${ratePerGram}/gr) - ${formatDateTimeID(nowIso)}`
         ]
       };
 
@@ -1486,6 +1733,7 @@
         document.getElementById('f-resi').value = '';
         document.getElementById('f-item-name').value = '';
         document.getElementById('f-qty').value = '1';
+        document.getElementById('f-item-rate').value = Number(appState.settings.ratePerGram || 250);
         document.getElementById('duplicate-resi-warning').classList.add('hidden');
         document.getElementById('f-is-combined').checked = false;
         appState.tempPhotos.checkout = [];
@@ -1557,8 +1805,8 @@
               <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-200 text-amber-900">⏳ Belum Ada Resi</span>
               <span class="text-[11px] font-bold text-slate-500">${formatDateTimeID(item.createdAt)}</span>
             </div>
-            <h4 class="font-display font-bold text-base text-slate-800">${item.itemName} <span class="text-pink-600">(x${item.qty})</span></h4>
-            <p class="text-xs text-slate-600 mt-0.5">👤 ${item.customerName} • ${item.category} (${item.treatmentDetail})</p>
+            <h4 class="font-display font-bold text-base text-slate-800">${escapeHtml(item.itemName)} <span class="text-pink-600">(x${item.qty})</span></h4>
+            <p class="text-xs text-slate-600 mt-0.5">👤 ${escapeHtml(item.customerName)} • ${escapeHtml(item.category)} (${escapeHtml(item.treatmentDetail)})</p>
           </div>
           <button onclick="openChangeResiModal('${item.id}', true)" class="cute-btn w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs">
             📮 Isi Nomor Resi Sekarang
@@ -1623,11 +1871,50 @@
       return list;
     }
 
-    // --- Spreadsheet UI for Rekapan & Tracking ---
+    // --- Hapus Barang Retur / Batal Kirim ---
+    function canDeleteItem(item) {
+      if (!item || !appState.session) return false;
+      const isReturnedOrCancelled = item.status === 'Retur & Refund' || item.status === 'Ga Kebawa';
+      if (!isReturnedOrCancelled) return false;
+
+      if (appState.session.role === 'admin') return true;
+
+      // Customer tidak bisa hapus jika sudah ditimbang atau masuk koper (harus dari admin)
+      const isWeighedOrPacked =
+        item.status === 'Sudah Ditimbang' ||
+        item.status === 'Masuk Koper' ||
+        Number(item.weightGrams || 0) > 0 ||
+        Boolean((item.suitcaseOwner || '').trim());
+
+      return !isWeighedOrPacked;
+    }
+
+    window.deleteReturnedItem = async function(itemId) {
+      const item = appState.items.find(i => i.id === itemId);
+      if (!item || !firebaseUser || !appState.session) return;
+
+      if (!canDeleteItem(item)) {
+        showToast("Barang sudah ditimbang/masuk koper atau bukan status retur/batal kirim. Hubungi admin ya! 🔒", "warning");
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `Hapus permanen barang "${item.itemName}" (${item.status})? Tindakan ini tidak bisa dibatalkan.`
+      );
+      if (!confirmed) return;
+
+      try {
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'packages', itemId));
+        showToast(`Barang "${item.itemName}" berhasil dihapus! 🗑️`, "success");
+      } catch (err) {
+        showToast("Gagal menghapus barang: " + err.message, "error");
+      }
+    };
+
+    // --- Spreadsheet UI for Rekapan & Tracking (Admin & Customer) ---
     window.renderItemsList = function() {
       const container = document.getElementById('items-list-container');
       const isAdmin = appState.session?.role === 'admin';
-      const rate = Number(appState.settings.ratePerGram || 250);
       const list = getFilteredTrackingList();
 
       if (!list.length) {
@@ -1653,16 +1940,17 @@
           <thead>
             <tr>
               <th class="w-10 text-center">No</th>
-              <th>Customer</th>
+              ${isAdmin ? '<th>Customer</th>' : ''}
               <th>Resi</th>
               <th>Barang</th>
               <th class="text-center">Qty</th>
               <th>Kategori & Perlakuan</th>
               <th>Status & Kloter</th>
               <th class="text-right">Berat</th>
+              <th class="text-right">Rate</th>
               <th class="text-right">Tambahan</th>
               <th class="text-right">Tagihan</th>
-              <th>Koper & Catatan</th>
+              <th>${isAdmin ? 'Koper & Catatan' : 'Koper & Info'}</th>
               <th class="no-print text-center">Aksi</th>
             </tr>
           </thead>
@@ -1670,17 +1958,19 @@
             ${list.map((item, idx) => {
               const isLockedForCust = !isAdmin && lockedStatuses.includes(item.status);
               const isMultiResi = item.resi && (resiCounts[item.resi] > 1 || item.isCombinedPackage);
-              const itemCost = (item.status === 'Retur & Refund' || item.status === 'Ga Kebawa')
-                ? 0
-                : (Number(item.weightGrams || 0) * rate) + Number(item.extraFee || 0);
+              const rate = getItemRate(item);
+              const itemCost = computeItemCost(item);
+              const showDeleteBtn = canDeleteItem(item);
 
               return `
                 <tr>
                   <td class="text-center font-bold text-slate-500">${idx + 1}</td>
-                  <td>
-                    <div class="font-bold text-slate-800">${escapeHtml(item.customerName)}</div>
-                    <div class="text-[10px] font-mono text-purple-700">${escapeHtml(item.customerCode)}</div>
-                  </td>
+                  ${isAdmin ? `
+                    <td>
+                      <div class="font-bold text-slate-800">${escapeHtml(item.customerName)}</div>
+                      <div class="text-[10px] font-mono text-purple-700">${escapeHtml(item.customerCode)}</div>
+                    </td>
+                  ` : ''}
                   <td>
                     <div class="font-mono font-bold text-slate-800">${item.resi ? escapeHtml(item.resi) : '<span class="text-amber-600 italic">Belum ada</span>'}</div>
                     ${item.previousResi ? `<div class="text-[10px] font-mono text-slate-400 line-through">Eks: ${escapeHtml(item.previousResi)}</div>` : ''}
@@ -1688,7 +1978,7 @@
                   </td>
                   <td>
                     <div class="font-bold text-slate-800">${escapeHtml(item.itemName)}</div>
-                    <div class="text-[10px] text-slate-400">${formatDateTimeID(item.createdAt)} • ${escapeHtml(item.uploaderName)}</div>
+                    <div class="text-[10px] text-slate-400">${formatDateTimeID(item.createdAt)}</div>
                   </td>
                   <td class="text-center font-extrabold">${item.qty}</td>
                   <td>
@@ -1699,6 +1989,7 @@
                     <div class="text-[10px] font-bold mt-1 ${item.isNextTrip ? 'text-amber-700' : 'text-teal-700'}">${item.isNextTrip ? '⏭️ Next Trip' : '✈️ Trip Aktif'}</div>
                   </td>
                   <td class="text-right font-bold">${item.weightGrams || 0} gr</td>
+                  <td class="text-right font-semibold">Rp ${rate.toLocaleString('id-ID')}</td>
                   <td class="text-right font-semibold">Rp ${Number(item.extraFee || 0).toLocaleString('id-ID')}</td>
                   <td class="text-right font-extrabold text-teal-700">Rp ${itemCost.toLocaleString('id-ID')}</td>
                   <td>
@@ -1710,13 +2001,14 @@
                   <td class="no-print whitespace-nowrap">
                     <div class="flex flex-col gap-1">
                       <div class="flex gap-1">
-                        <button onclick="openItemDetailModal('${item.id}')" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold">📜 Foto/Log</button>
+                        <button onclick="openItemDetailModal('${item.id}', false)" class="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[10px] font-bold">📜 Foto/Log</button>
                         <button onclick="openChangeResiModal('${item.id}', false)" class="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-bold">🔄 Resi</button>
                         <button onclick="openReturModal('${item.id}')" class="px-2 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 text-[10px] font-bold">↩️ Retur</button>
                       </div>
                       <div class="flex gap-1">
                         ${!isAdmin && !isLockedForCust ? `<button onclick="openCustEditModal('${item.id}')" class="px-2 py-1 rounded bg-pink-100 hover:bg-pink-200 text-pink-800 text-[10px] font-bold">✏️ Edit</button>` : ''}
-                        ${isAdmin ? `<button onclick="openAdminEditModal('${item.id}')" class="w-full px-2 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold">👑 Gudang/Koper</button>` : ''}
+                        ${isAdmin ? `<button onclick="openAdminEditModal('${item.id}')" class="flex-1 px-2 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold">👑 Gudang/Koper</button>` : ''}
+                        ${showDeleteBtn ? `<button onclick="deleteReturnedItem('${item.id}')" class="px-2 py-1 rounded bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold">🗑️ Hapus</button>` : ''}
                       </div>
                     </div>
                   </td>
@@ -1751,7 +2043,7 @@
         .replace(/"/g, '&quot;');
     }
 
-    // --- Spreadsheet UI for Sheet Berat & Tagihan Akhir (All Customer) ---
+    // --- Spreadsheet UI for Sheet Berat & Tagihan Akhir (Admin & Customer) ---
     window.setBillingTripFilter = function(filter) {
       appState.billingTripFilter = filter;
       ['ACTIVE', 'NEXT', 'ALL'].forEach(f => {
@@ -1764,7 +2056,6 @@
     };
 
     function getBillingGroups() {
-      const rate = Number(appState.settings.ratePerGram || 250);
       const tripFilter = appState.billingTripFilter;
       let items = getScopedItems();
       if (tripFilter === 'ACTIVE') items = items.filter(i => !i.isNextTrip);
@@ -1791,7 +2082,7 @@
           const extra = Number(it.extraFee || 0);
           grouped[key].totalWeight += w;
           grouped[key].totalExtraFee += extra;
-          grouped[key].grandTotal += (w * rate) + extra;
+          grouped[key].grandTotal += computeItemCost(it);
         }
       });
 
@@ -1801,7 +2092,6 @@
     window.renderBillingSheet = function() {
       const container = document.getElementById('billing-cards-container');
       const isAdmin = appState.session?.role === 'admin';
-      const rate = Number(appState.settings.ratePerGram || 250);
       const tripFilter = appState.billingTripFilter;
       const groups = getBillingGroups();
 
@@ -1819,23 +2109,24 @@
       const allExtra = groups.reduce((s, g) => s + g.totalExtraFee, 0);
       const allGrand = groups.reduce((s, g) => s + g.grandTotal, 0);
 
-      // Ringkasan All Customer dalam tabel spreadsheet
       const summaryTableHtml = `
         <div class="mb-5">
-          <div class="text-xs font-extrabold text-teal-800 mb-2">📊 Ringkasan Tagihan Semua Customer (${tripFilter === 'NEXT' ? 'Next Trip' : tripFilter === 'ACTIVE' ? 'Trip Aktif' : 'Semua Kloter'})</div>
+          <div class="text-xs font-extrabold text-teal-800 mb-2">
+            📊 ${isAdmin ? 'Ringkasan Tagihan Semua Customer' : 'Ringkasan Tagihan Kamu'} (${tripFilter === 'NEXT' ? 'Next Trip' : tripFilter === 'ACTIVE' ? 'Trip Aktif' : 'Semua Kloter'})
+          </div>
           <table class="sheet-table">
             <thead>
               <tr>
                 <th class="w-10 text-center">No</th>
                 <th>Kode</th>
                 <th>Customer</th>
-                <th>Kontak</th>
+                ${isAdmin ? '<th>Kontak</th>' : ''}
                 <th class="text-center">Item</th>
                 <th class="text-right">Total Berat</th>
                 <th class="text-right">Biaya Tambahan</th>
                 <th class="text-right">Total Tagihan</th>
                 <th>Status Bayar</th>
-                <th class="no-print text-center">WA / Catatan</th>
+                <th class="no-print text-center">${isAdmin ? 'WA / Catatan' : 'Salin WA'}</th>
               </tr>
             </thead>
             <tbody>
@@ -1847,7 +2138,7 @@
                     <td class="text-center font-bold">${i + 1}</td>
                     <td class="font-mono font-bold text-purple-700">${escapeHtml(cust.customerCode)}</td>
                     <td class="font-bold text-slate-800">${escapeHtml(cust.customerName)}</td>
-                    <td>${escapeHtml(cust.customerContact)}</td>
+                    ${isAdmin ? `<td>${escapeHtml(cust.customerContact)}</td>` : ''}
                     <td class="text-center font-bold">${cust.items.length}</td>
                     <td class="text-right font-bold">${cust.totalWeight} gr</td>
                     <td class="text-right">Rp ${cust.totalExtraFee.toLocaleString('id-ID')}</td>
@@ -1859,38 +2150,39 @@
                           <option value="DP 🟡" ${payInfo.status === 'DP 🟡' ? 'selected' : ''}>DP 🟡</option>
                           <option value="Lunas 🟢" ${payInfo.status === 'Lunas 🟢' ? 'selected' : ''}>Lunas 🟢</option>
                         </select>
-                      ` : `<span class="font-bold">${escapeHtml(payInfo.status)}</span>`}
+                      ` : `<span class="font-bold">${escapeHtml(payInfo.status)}</span>${payInfo.note ? ` <span class="text-[10px] text-slate-500">(${escapeHtml(payInfo.note)})</span>` : ''}`}
                     </td>
                     <td class="no-print">
-                      <div class="flex items-center gap-1">
+                      <div class="flex items-center justify-center gap-1">
                         ${isAdmin ? `
                           <input type="text" value="${escapeHtml(payInfo.note || '')}" onblur="updatePaymentStatus('${payDocId}', null, this.value)"
                             placeholder="Catatan..." class="px-2 py-1 rounded border border-slate-300 text-[11px] w-24 bg-white" />
-                        ` : `<span class="text-[11px] text-slate-500">${escapeHtml(payInfo.note || '-')}</span>`}
+                        ` : ''}
                         <button onclick="copyWhatsAppInvoice('${cust.customerCode}', '${tripFilter}')" class="px-2 py-1 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold">📲 WA</button>
                       </div>
                     </td>
                   </tr>
                 `;
               }).join('')}
-              <tr class="bg-teal-50 font-extrabold">
-                <td colspan="5" class="text-right">TOTAL KESELURUHAN</td>
-                <td class="text-right">${allWeight} gr</td>
-                <td class="text-right">Rp ${allExtra.toLocaleString('id-ID')}</td>
-                <td class="text-right text-teal-800">Rp ${allGrand.toLocaleString('id-ID')}</td>
-                <td colspan="2"></td>
-              </tr>
+              ${isAdmin ? `
+                <tr class="bg-teal-50 font-extrabold">
+                  <td colspan="5" class="text-right">TOTAL KESELURUHAN</td>
+                  <td class="text-right">${allWeight} gr</td>
+                  <td class="text-right">Rp ${allExtra.toLocaleString('id-ID')}</td>
+                  <td class="text-right text-teal-800">Rp ${allGrand.toLocaleString('id-ID')}</td>
+                  <td colspan="2"></td>
+                </tr>
+              ` : ''}
             </tbody>
           </table>
         </div>
       `;
 
-      // Rincian per item tiap customer dalam format tabel sheet
       const detailTablesHtml = groups.map(cust => `
         <div class="border border-slate-300 rounded-2xl p-3.5 bg-white space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="text-xs font-extrabold text-slate-800">
-              ${escapeHtml(cust.customerName)} <span class="font-mono text-purple-700">(${escapeHtml(cust.customerCode)})</span> • ${escapeHtml(cust.customerContact)}
+              ${escapeHtml(cust.customerName)} <span class="font-mono text-purple-700">(${escapeHtml(cust.customerCode)})</span>${isAdmin ? ` • ${escapeHtml(cust.customerContact)}` : ''}
             </div>
             <div class="text-xs font-extrabold text-teal-700">
               Total: Rp ${cust.grandTotal.toLocaleString('id-ID')} (${cust.totalWeight} gr)
@@ -1905,6 +2197,7 @@
                 <th class="text-center">Qty</th>
                 <th>Status</th>
                 <th class="text-right">Berat</th>
+                <th class="text-right">Rate</th>
                 <th class="text-right">Biaya Tambahan</th>
                 <th class="text-right">Subtotal</th>
               </tr>
@@ -1912,7 +2205,8 @@
             <tbody>
               ${cust.items.map((it, idx) => {
                 const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
-                const sub = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
+                const rate = getItemRate(it);
+                const sub = computeItemCost(it);
                 return `
                   <tr class="${excluded ? 'opacity-60' : ''}">
                     <td class="text-center">${idx + 1}</td>
@@ -1921,6 +2215,7 @@
                     <td class="text-center">${it.qty}</td>
                     <td><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${getStatusBadgeStyle(it.status)}">${escapeHtml(it.status)}</span></td>
                     <td class="text-right">${it.weightGrams || 0} gr</td>
+                    <td class="text-right">Rp ${rate.toLocaleString('id-ID')}</td>
                     <td class="text-right">Rp ${Number(it.extraFee || 0).toLocaleString('id-ID')}</td>
                     <td class="text-right font-bold text-teal-700">Rp ${sub.toLocaleString('id-ID')}</td>
                   </tr>
@@ -1952,14 +2247,11 @@
 
     window.downloadTrackingCSV = function() {
       const list = getFilteredTrackingList();
-      const rate = Number(appState.settings.ratePerGram || 250);
       const rows = [
-        ['No', 'Kode Customer', 'Nama Customer', 'Kontak', 'Resi', 'Resi Sebelumnya', 'Barang', 'Qty', 'Kategori', 'Perlakuan', 'Status', 'Kloter', 'Berat (gr)', 'Biaya Tambahan (Rp)', 'Tagihan (Rp)', 'Koper', 'Catatan Admin', 'Keterangan Retur']
+        ['No', 'Kode Customer', 'Nama Customer', 'Kontak', 'Resi', 'Resi Sebelumnya', 'Barang', 'Qty', 'Kategori', 'Perlakuan', 'Status', 'Kloter', 'Berat (gr)', 'Rate (Rp/gr)', 'Biaya Tambahan (Rp)', 'Tagihan (Rp)', 'Koper', 'Catatan Admin', 'Keterangan Retur']
       ];
 
       list.forEach((it, idx) => {
-        const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
-        const cost = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
         rows.push([
           idx + 1,
           it.customerCode,
@@ -1974,8 +2266,9 @@
           it.status,
           it.isNextTrip ? 'Next Trip' : 'Trip Aktif',
           it.weightGrams || 0,
+          getItemRate(it),
           it.extraFee || 0,
-          cost,
+          computeItemCost(it),
           it.suitcaseOwner || '',
           it.adminNote || '',
           it.returReason || ''
@@ -1988,19 +2281,16 @@
 
     window.downloadBillingCSV = function() {
       const groups = getBillingGroups();
-      const rate = Number(appState.settings.ratePerGram || 250);
       const tripFilter = appState.billingTripFilter;
 
       const rows = [
-        ['Kode Customer', 'Nama Customer', 'Kontak', 'Kloter', 'Status Pembayaran', 'Catatan Bayar', 'Barang', 'Resi', 'Qty', 'Status Barang', 'Berat (gr)', 'Biaya Tambahan (Rp)', 'Subtotal (Rp)', 'Total Tagihan Customer (Rp)']
+        ['Kode Customer', 'Nama Customer', 'Kontak', 'Kloter', 'Status Pembayaran', 'Catatan Bayar', 'Barang', 'Resi', 'Qty', 'Status Barang', 'Berat (gr)', 'Rate (Rp/gr)', 'Biaya Tambahan (Rp)', 'Subtotal (Rp)', 'Total Tagihan Customer (Rp)']
       ];
 
       groups.forEach(cust => {
         const payDocId = `${cust.customerCode}_${tripFilter}`;
         const payInfo = appState.payments[payDocId] || { status: 'Belum Lunas 🔴', note: '' };
         cust.items.forEach(it => {
-          const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
-          const sub = excluded ? 0 : (Number(it.weightGrams || 0) * rate) + Number(it.extraFee || 0);
           rows.push([
             cust.customerCode,
             cust.customerName,
@@ -2013,15 +2303,16 @@
             it.qty,
             it.status,
             it.weightGrams || 0,
+            getItemRate(it),
             it.extraFee || 0,
-            sub,
+            computeItemCost(it),
             cust.grandTotal
           ]);
         });
       });
 
-      triggerCsvDownload(`sheet-berat-tagihan-all-customer-${tripFilter.toLowerCase()}.csv`, rows);
-      showToast("File CSV tagihan all customer berhasil diunduh! 📊", "success");
+      triggerCsvDownload(`sheet-berat-tagihan-${tripFilter.toLowerCase()}.csv`, rows);
+      showToast("File CSV tagihan berhasil diunduh! 📊", "success");
     };
 
     window.downloadCurrentPDF = function() {
@@ -2047,7 +2338,6 @@
     };
 
     window.copyWhatsAppInvoice = function(custCode, tripFilter) {
-      const rate = Number(appState.settings.ratePerGram || 250);
       let items = appState.items.filter(i => i.customerCode === custCode);
       if (tripFilter === 'ACTIVE') items = items.filter(i => !i.isNextTrip);
       if (tripFilter === 'NEXT') items = items.filter(i => i.isNextTrip);
@@ -2060,23 +2350,24 @@
       const lines = items.map((it, idx) => {
         const excluded = it.status === 'Retur & Refund' || it.status === 'Ga Kebawa';
         const w = Number(it.weightGrams || 0);
+        const rate = getItemRate(it);
         const ex = Number(it.extraFee || 0);
-        const sub = excluded ? 0 : (w * rate) + ex;
+        const sub = computeItemCost(it);
         if (!excluded) {
           totalW += w;
           totalExtra += ex;
           totalRp += sub;
         }
-        return `${idx + 1}. ${it.itemName} (${it.qty} pcs) - [${it.status}]\n   Berat: ${w}gr | Tambahan: Rp ${ex.toLocaleString('id-ID')} | Subtotal: Rp ${sub.toLocaleString('id-ID')}`;
+        return `${idx + 1}. ${it.itemName} (${it.qty} pcs) - [${it.status}]\n   Berat: ${w}gr × Rp ${rate.toLocaleString('id-ID')} | Tambahan: Rp ${ex.toLocaleString('id-ID')} | Subtotal: Rp ${sub.toLocaleString('id-ID')}`;
       }).join('\n');
 
       const payDocId = `${custCode}_${tripFilter}`;
       const payInfo = appState.payments[payDocId] || { status: 'Belum Lunas 🔴', note: '' };
+      const guestLink = `${window.location.origin}${window.location.pathname}?cek=${encodeURIComponent(custCode)}`;
 
       const text = `✈️ *INVOICE HANDCARRY CHINA - INDO* 🧸\n` +
         `Customer: *${custName}* (${custCode})\n` +
         `Kloter: *${labelTrip}*\n` +
-        `Tarif: Rp ${rate.toLocaleString('id-ID')} / gram\n` +
         `----------------------------------\n` +
         `${lines}\n` +
         `----------------------------------\n` +
@@ -2084,15 +2375,10 @@
         `💵 Total Biaya Tambahan: *Rp ${totalExtra.toLocaleString('id-ID')}*\n` +
         `💰 *TOTAL TAGIHAN: Rp ${totalRp.toLocaleString('id-ID')}*\n` +
         `📌 Status: *${payInfo.status}*\n` +
+        `👀 Cek Foto & Detail Tanpa Login: ${guestLink}\n` +
         `Terima kasih sudah jastip bersama kami~ 🌸✨`;
 
-      const temp = document.createElement('textarea');
-      temp.value = text;
-      document.body.appendChild(temp);
-      temp.select();
-      document.execCommand('copy');
-      document.body.removeChild(temp);
-      showToast(`Format tagihan WA untuk ${custName} berhasil disalin! 📲`, "success");
+      copyTextToClipboard(text, `Format tagihan WA untuk ${custName} berhasil disalin! 📲`);
     };
 
     window.handleSaveSettings = async function(e) {
@@ -2114,7 +2400,8 @@
           updatedBy: appState.session.adminOperator,
           updatedAt: new Date().toISOString()
         });
-        showToast("Pengaturan trip & tarif berhasil disimpan! ⚙️✨", "success");
+        document.getElementById('f-item-rate').value = ratePerGram;
+        showToast("Pengaturan trip & rate default berhasil disimpan! ⚙️✨", "success");
       } catch (err) {
         showToast("Gagal menyimpan pengaturan: " + err.message, "error");
       }
@@ -2138,6 +2425,7 @@
       document.getElementById('ae-status').value = item.status;
       document.getElementById('ae-is-next-trip').value = String(Boolean(item.isNextTrip));
       document.getElementById('ae-weight').value = item.weightGrams || '';
+      document.getElementById('ae-rate').value = getItemRate(item);
       document.getElementById('ae-extra-fee').value = item.extraFee || '';
       document.getElementById('ae-suitcase-owner').value = item.suitcaseOwner || '';
       document.getElementById('ae-packing-detail').value = item.packingDetail || '';
@@ -2164,13 +2452,14 @@
       const newStatus = document.getElementById('ae-status').value;
       const isNextTrip = document.getElementById('ae-is-next-trip').value === 'true';
       const weightGrams = parseFloat(document.getElementById('ae-weight').value) || 0;
+      const ratePerGram = parseFloat(document.getElementById('ae-rate').value) || getItemRate(item);
       const extraFee = parseFloat(document.getElementById('ae-extra-fee').value) || 0;
       const suitcaseOwner = document.getElementById('ae-suitcase-owner').value.trim();
       const packingDetail = document.getElementById('ae-packing-detail').value.trim();
       const adminNote = document.getElementById('ae-admin-note').value.trim();
 
       const nowIso = new Date().toISOString();
-      const logEntry = `Diupdate oleh ${adminName} (${newStatus}, ${weightGrams}gr${suitcaseOwner ? `, ${suitcaseOwner}` : ''}) - ${formatDateTimeID(nowIso)}`;
+      const logEntry = `Diupdate oleh ${adminName} (${newStatus}, ${weightGrams}gr, Rate Rp ${ratePerGram}/gr${suitcaseOwner ? `, ${suitcaseOwner}` : ''}) - ${formatDateTimeID(nowIso)}`;
       const updatedLogs = [...(item.auditLogs || []), logEntry];
 
       try {
@@ -2178,6 +2467,7 @@
           status: newStatus,
           isNextTrip,
           weightGrams,
+          ratePerGram,
           extraFee,
           suitcaseOwner,
           packingDetail,
@@ -2190,7 +2480,7 @@
           auditLogs: updatedLogs
         });
         closeModal('modal-admin-edit');
-        showToast("Data gudang & koper berhasil diperbarui! 👑", "success");
+        showToast("Data gudang, rate & koper berhasil diperbarui! 👑", "success");
       } catch (err) {
         showToast("Gagal menyimpan update: " + err.message, "error");
       }
@@ -2324,10 +2614,10 @@
       }
     };
 
-    window.openItemDetailModal = function(itemId) {
+    window.openItemDetailModal = function(itemId, isGuest = false) {
       const item = appState.items.find(i => i.id === itemId);
       if (!item) return;
-      const isAdmin = appState.session?.role === 'admin';
+      const isAdmin = !isGuest && appState.session?.role === 'admin';
 
       const renderGallerySection = (title, photos, badgeColor) => {
         if (!photos || !photos.length) return '';
@@ -2348,7 +2638,7 @@
       content.innerHTML = `
         <div class="bg-pink-50/70 p-3.5 rounded-2xl border border-pink-100">
           <div class="font-display font-bold text-base text-slate-800">${escapeHtml(item.itemName)} (${item.qty} pcs)</div>
-          <div class="text-xs text-slate-600 mt-0.5">Resi: <span class="font-mono font-bold">${escapeHtml(item.resi || '-')}</span> • Pengupload: <b>${escapeHtml(item.uploaderName)}</b></div>
+          <div class="text-xs text-slate-600 mt-0.5">Resi: <span class="font-mono font-bold">${escapeHtml(item.resi || '-')}</span> • Berat: <b>${item.weightGrams || 0} gr</b> • Rate: <b>Rp ${getItemRate(item).toLocaleString('id-ID')}/gr</b>${isAdmin ? ` • Pengupload: <b>${escapeHtml(item.uploaderName)}</b>` : ''}</div>
         </div>
 
         ${renderGallerySection('🛍️ Foto Checkout', item.photosCheckout, 'text-amber-700')}
