@@ -95,7 +95,7 @@
         background: #ffffff !important;
         background-image: none !important;
       }
-      #splash-screen, #toast-container, #auth-view, header, nav, .grid.grid-cols-2.sm\:grid-cols-3, .no-print {
+      #splash-screen, #toast-container, #auth-view, header, nav, .grid.grid-cols-1.sm\:grid-cols-3, .no-print {
         display: none !important;
       }
       #app-shell, #public-track-view {
@@ -162,9 +162,9 @@
         <button type="button" onclick="downloadCurrentPDF()" class="cute-btn px-3 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">
           📄 Download PDF
         </button>
-        <a href="?" class="cute-btn px-3 py-2 rounded-xl bg-pink-500 text-white text-xs font-bold">
+        <button type="button" onclick="exitPublicTracking()" class="cute-btn px-3 py-2 rounded-xl bg-pink-500 text-white text-xs font-bold">
           🔑 Masuk / Kelola
-        </a>
+        </button>
       </div>
     </div>
 
@@ -188,24 +188,27 @@
     <div id="public-track-content" class="space-y-4"></div>
   </div>
 
-  <!-- ==================== 2. AUTH / LOGIN VIEW ==================== -->
+  <!-- ==================== 2. AUTH / LOGIN & CEK TANPA LOGIN VIEW ==================== -->
   <div id="auth-view" class="hidden flex-1 flex items-center justify-center p-4">
-    <div class="cute-card rounded-3xl max-w-md w-full p-6 sm:p-8 relative overflow-hidden">
+    <div class="cute-card rounded-3xl max-w-lg w-full p-6 sm:p-8 relative overflow-hidden">
       <div class="absolute -top-6 -right-6 text-6xl opacity-20 select-none">🧸</div>
       <div class="absolute -bottom-6 -left-6 text-6xl opacity-20 select-none">🎀</div>
       
-      <div class="text-center mb-6">
+      <div class="text-center mb-5">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-pink-100 text-3xl mb-3 shadow-sm">✈️</div>
         <h2 class="font-display text-2xl font-bold text-slate-800">Handcarry China - Indo</h2>
-        <p class="text-xs text-slate-500 mt-1">Masuk untuk cek paket, isi form checkout & lacak koper 💌</p>
+        <p class="text-xs text-slate-500 mt-1">Masuk untuk kelola paket atau langsung cek tracking tanpa login 💌</p>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 bg-purple-50 p-1.5 rounded-2xl mb-5">
-        <button type="button" onclick="switchAuthTab('existing')" id="tab-auth-existing" class="cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-purple-600 shadow-sm">
-          🔑 Sudah Punya Kode
+      <div class="grid grid-cols-3 gap-1.5 bg-purple-50 p-1.5 rounded-2xl mb-5">
+        <button type="button" onclick="switchAuthTab('existing')" id="tab-auth-existing" class="cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-purple-600 shadow-sm">
+          🔑 Masuk Kode
         </button>
-        <button type="button" onclick="switchAuthTab('register')" id="tab-auth-register" class="cute-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-500">
-          ✨ Daftar Customer Baru
+        <button type="button" onclick="switchAuthTab('register')" id="tab-auth-register" class="cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold text-slate-500">
+          ✨ Daftar Baru
+        </button>
+        <button type="button" onclick="switchAuthTab('guest-track')" id="tab-auth-guest-track" class="cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold text-slate-500">
+          🔗 Tanpa Login
         </button>
       </div>
 
@@ -253,6 +256,16 @@
           Buat Kode Akses Saya ✨
         </button>
       </form>
+
+      <div id="panel-guest-track" class="hidden space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Cari Kode Customer, Nama, Resi, atau Nama Barang 🔎</label>
+          <input type="text" id="guest-track-query" oninput="renderGuestTrackSearch()" placeholder="Contoh: HC-1234, Clarissa, SF123..., atau Cardigan..."
+            class="w-full px-4 py-2.5 rounded-2xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none text-sm bg-white" />
+          <p class="text-[11px] text-slate-400 mt-1">Bisa langsung buka halaman tracking tanpa login per customer atau per barang.</p>
+        </div>
+        <div id="guest-track-results" class="max-h-60 overflow-y-auto space-y-2"></div>
+      </div>
     </div>
   </div>
 
@@ -279,7 +292,7 @@
           <span class="text-[11px] font-bold text-teal-700">Kode Kamu:</span>
           <span id="display-user-code" class="font-display font-bold text-sm text-teal-800">HC-0000</span>
           <button type="button" onclick="copyUserCode()" class="ml-1 text-xs bg-teal-500 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-teal-600">Salin</button>
-          <button type="button" onclick="copyCustomerTrackingLink(appState.session?.code)" class="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-purple-600">🔗 Link Track</button>
+          <button type="button" onclick="openTrackingPage('cust:' + (appState.session?.code || ''))" class="text-xs bg-purple-500 text-white px-2 py-0.5 rounded-lg font-bold hover:bg-purple-600">🔗 Link Track</button>
         </div>
 
         <div id="header-admin-switcher" class="hidden items-center gap-1.5 bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-2xl">
@@ -902,7 +915,11 @@
       measurementId: "G-80CT9L4GC6"
     };
 
-    const publicTrackParam = new URLSearchParams(window.location.search).get('track') || '';
+    function getTrackParamFromUrl() {
+      return new URLSearchParams(window.location.search).get('track') || '';
+    }
+
+    let activeTrackToken = getTrackParamFromUrl();
     let isDataReady = false;
 
     let appState = {
@@ -957,6 +974,37 @@
       return url.toString();
     }
 
+    window.openTrackingPage = function(token) {
+      if (!token) return;
+      activeTrackToken = token;
+      try {
+        const url = new URL(window.location.href);
+        url.search = `?track=${encodeURIComponent(token)}`;
+        window.history.pushState({}, '', url.toString());
+      } catch {}
+
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('public-track-view').classList.remove('hidden');
+      renderPublicTrackingView();
+    };
+
+    window.exitPublicTracking = function() {
+      activeTrackToken = '';
+      try {
+        const url = new URL(window.location.href);
+        url.search = '';
+        window.history.replaceState({}, '', url.toString());
+      } catch {}
+
+      document.getElementById('public-track-view').classList.add('hidden');
+      if (appState.session) {
+        document.getElementById('app-shell').classList.remove('hidden');
+      } else {
+        document.getElementById('auth-view').classList.remove('hidden');
+      }
+    };
+
     window.copyCustomerTrackingLink = function(customerCode) {
       if (!customerCode) return;
       const link = buildTrackUrl(`cust:${customerCode}`);
@@ -994,10 +1042,12 @@
     function onRealtimeDataUpdated() {
       isDataReady = true;
       updateHeaderTripUI();
-      if (publicTrackParam) {
+      if (activeTrackToken) {
         renderPublicTrackingView();
       } else if (appState.session) {
         refreshAllViews();
+      } else if (!document.getElementById('panel-guest-track')?.classList.contains('hidden')) {
+        renderGuestTrackSearch();
       }
     }
 
@@ -1034,7 +1084,7 @@
             splash.style.opacity = '0';
             setTimeout(() => {
               splash.classList.add('hidden');
-              if (publicTrackParam) {
+              if (activeTrackToken) {
                 document.getElementById('public-track-view').classList.remove('hidden');
                 renderPublicTrackingView();
               } else {
@@ -1048,7 +1098,7 @@
         console.error(err);
         updateLoadingProgress(100, "Mode offline siap.");
         document.getElementById('splash-screen').classList.add('hidden');
-        if (publicTrackParam) {
+        if (activeTrackToken) {
           document.getElementById('public-track-view').classList.remove('hidden');
           renderPublicTrackingView();
         } else {
@@ -1096,6 +1146,60 @@
       }, (err) => console.error("Payments sync error:", err));
     }
 
+    // --- Pencarian Cepat Tracking Tanpa Login di Halaman Awal ---
+    window.renderGuestTrackSearch = function() {
+      const box = document.getElementById('guest-track-results');
+      if (!box) return;
+      if (!isDataReady) {
+        box.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">Memuat data paket...</div>`;
+        return;
+      }
+
+      const q = (document.getElementById('guest-track-query')?.value || '').trim().toLowerCase();
+      const matchedItems = appState.items.filter(it => !q ||
+        (it.customerCode || '').toLowerCase().includes(q) ||
+        (it.customerName || '').toLowerCase().includes(q) ||
+        (it.resi || '').toLowerCase().includes(q) ||
+        (it.itemName || '').toLowerCase().includes(q)
+      );
+
+      if (!matchedItems.length) {
+        box.innerHTML = `<div class="text-xs text-slate-500 text-center py-4 bg-slate-50 rounded-2xl border border-slate-200">Tidak ada paket yang cocok.</div>`;
+        return;
+      }
+
+      const uniqueCusts = new Map();
+      matchedItems.forEach(it => {
+        if (!uniqueCusts.has(it.customerCode)) {
+          uniqueCusts.set(it.customerCode, it.customerName);
+        }
+      });
+
+      const custButtonsHtml = Array.from(uniqueCusts.entries()).slice(0, 5).map(([code, name]) => `
+        <button type="button" onclick="openTrackingPage('cust:${escapeHtml(code)}')"
+          class="w-full text-left px-3.5 py-2.5 rounded-2xl bg-purple-50 hover:bg-purple-100 border border-purple-200 flex items-center justify-between gap-2">
+          <div>
+            <div class="text-xs font-extrabold text-purple-900">👤 Semua Paket: ${escapeHtml(name)}</div>
+            <div class="text-[10px] font-mono text-purple-700">${escapeHtml(code)}</div>
+          </div>
+          <span class="text-[11px] font-bold text-purple-800">Buka Sheet →</span>
+        </button>
+      `).join('');
+
+      const itemButtonsHtml = matchedItems.slice(0, 8).map(it => `
+        <button type="button" onclick="openTrackingPage('item:${escapeHtml(it.id)}')"
+          class="w-full text-left px-3.5 py-2.5 rounded-2xl bg-pink-50/70 hover:bg-pink-100/80 border border-pink-200 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-xs font-extrabold text-slate-800 truncate">📦 ${escapeHtml(it.itemName)} <span class="text-pink-600">(x${it.qty})</span></div>
+            <div class="text-[10px] text-slate-500 truncate">${escapeHtml(it.customerName)} • Resi: ${escapeHtml(it.resi || 'Belum ada')} • ${escapeHtml(it.status)}</div>
+          </div>
+          <span class="text-[11px] font-bold text-pink-700 whitespace-nowrap">Track →</span>
+        </button>
+      `).join('');
+
+      box.innerHTML = custButtonsHtml + itemButtonsHtml;
+    };
+
     // --- Public Tracking View (Tanpa Login) ---
     function renderPublicTrackingView() {
       const subEl = document.getElementById('public-track-subtitle');
@@ -1108,8 +1212,8 @@
         return;
       }
 
-      if (publicTrackParam.startsWith('item:')) {
-        const itemId = publicTrackParam.slice(5);
+      if (activeTrackToken.startsWith('item:')) {
+        const itemId = activeTrackToken.slice(5);
         const item = appState.items.find(i => i.id === itemId);
 
         if (!item) {
@@ -1211,8 +1315,8 @@
         return;
       }
 
-      if (publicTrackParam.startsWith('cust:')) {
-        const custCode = publicTrackParam.slice(5);
+      if (activeTrackToken.startsWith('cust:')) {
+        const custCode = activeTrackToken.slice(5);
         const custItems = appState.items.filter(i => i.customerCode === custCode);
 
         if (!custItems.length) {
@@ -1319,19 +1423,29 @@
     window.switchAuthTab = function(mode) {
       const btnEx = document.getElementById('tab-auth-existing');
       const btnReg = document.getElementById('tab-auth-register');
+      const btnGuest = document.getElementById('tab-auth-guest-track');
       const formEx = document.getElementById('form-login-existing');
       const formReg = document.getElementById('form-register-customer');
+      const panelGuest = document.getElementById('panel-guest-track');
+
+      const inactiveClass = "cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold text-slate-500";
+      btnEx.className = inactiveClass;
+      btnReg.className = inactiveClass;
+      btnGuest.className = inactiveClass;
+      formEx.classList.add('hidden');
+      formReg.classList.add('hidden');
+      panelGuest.classList.add('hidden');
 
       if (mode === 'existing') {
-        btnEx.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-purple-600 shadow-sm";
-        btnReg.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-500";
+        btnEx.className = "cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-purple-600 shadow-sm";
         formEx.classList.remove('hidden');
-        formReg.classList.add('hidden');
-      } else {
-        btnReg.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold bg-white text-teal-600 shadow-sm";
-        btnEx.className = "cute-btn py-2 px-3 rounded-xl text-xs font-bold text-slate-500";
+      } else if (mode === 'register') {
+        btnReg.className = "cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-teal-600 shadow-sm";
         formReg.classList.remove('hidden');
-        formEx.classList.add('hidden');
+      } else {
+        btnGuest.className = "cute-btn py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold bg-white text-pink-600 shadow-sm";
+        panelGuest.classList.remove('hidden');
+        renderGuestTrackSearch();
       }
     };
 
@@ -1395,7 +1509,7 @@
       const email = document.getElementById('reg-email').value.trim().toLowerCase();
 
       if (isSecretAdminEmail(email)) {
-        showToast("Gunakan tab 'Sudah Punya Kode' untuk masuk dengan email ini.", "info");
+        showToast("Gunakan tab 'Masuk Kode' untuk masuk dengan email ini.", "info");
         switchAuthTab('existing');
         document.getElementById('login-identifier').value = email;
         document.getElementById('admin-role-picker').classList.remove('hidden');
