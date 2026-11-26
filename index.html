@@ -79,6 +79,39 @@
     .sheet-table tbody tr:hover {
       background-color: #fdf4ff;
     }
+    #invoice-pdf-print-area {
+      font-family: 'Nunito', sans-serif;
+      color: #1e293b;
+      background: #ffffff;
+    }
+    .pdf-inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .pdf-inv-table th,
+    .pdf-inv-table td {
+      border: 1px solid #64748b;
+      padding: 8px 10px;
+      vertical-align: top;
+      text-align: left;
+    }
+    .pdf-inv-table th {
+      background: #f1f5f9;
+      font-weight: 800;
+    }
+    .pdf-proof-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .pdf-proof-grid img {
+      width: 72px;
+      height: 72px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+    }
     @keyframes floatPlane {
       0%, 100% { transform: translateY(0px) rotate(-3deg); }
       50% { transform: translateY(-10px) rotate(3deg); }
@@ -91,28 +124,51 @@
     ::-webkit-scrollbar-thumb { background: #FFB3C6; border-radius: 999px; }
 
     @media print {
-      body {
+      body:not(.printing-invoice-only) {
         background: #ffffff !important;
         background-image: none !important;
       }
-      #splash-screen, #toast-container, #auth-view, header, nav, .grid.grid-cols-1.sm\:grid-cols-3, .no-print {
+      body:not(.printing-invoice-only) #splash-screen,
+      body:not(.printing-invoice-only) #toast-container,
+      body:not(.printing-invoice-only) #auth-view,
+      body:not(.printing-invoice-only) header,
+      body:not(.printing-invoice-only) nav,
+      body:not(.printing-invoice-only) .grid.grid-cols-1.sm\:grid-cols-3,
+      body:not(.printing-invoice-only) .no-print {
         display: none !important;
       }
-      #app-shell, #public-track-view {
+      body:not(.printing-invoice-only) #app-shell,
+      body:not(.printing-invoice-only) #public-track-view {
         display: block !important;
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
       }
-      .cute-card {
+      body:not(.printing-invoice-only) .cute-card {
         border: 1px solid #cbd5e1 !important;
         box-shadow: none !important;
         background: #ffffff !important;
       }
-      .sheet-table th, .sheet-table td {
+      body:not(.printing-invoice-only) .sheet-table th,
+      body:not(.printing-invoice-only) .sheet-table td {
         border: 1px solid #64748b !important;
         padding: 5px 7px !important;
         font-size: 10px !important;
+      }
+
+      body.printing-invoice-only > *:not(#invoice-pdf-print-area):not(#toast-container) {
+        display: none !important;
+      }
+      body.printing-invoice-only {
+        background: #ffffff !important;
+        background-image: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+      body.printing-invoice-only #invoice-pdf-print-area {
+        display: block !important;
+        width: 100% !important;
+        padding: 16px !important;
       }
     }
   </style>
@@ -414,7 +470,6 @@
           </div>
         </div>
 
-        <!-- Daftar Barang (Bisa Banyak Barang Sekaligus) -->
         <div class="space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
@@ -600,7 +655,7 @@
             <button type="button" onclick="downloadInvoiceCSV()" class="cute-btn px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
               📊 Download Spreadsheet (CSV)
             </button>
-            <button type="button" onclick="downloadCurrentPDF()" class="cute-btn px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs">
+            <button type="button" onclick="downloadInvoicePDF()" class="cute-btn px-3 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-xs">
               📄 Download PDF
             </button>
           </div>
@@ -881,6 +936,9 @@
   <div id="modal-image-zoom" onclick="closeModal('modal-image-zoom')" class="hidden fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
     <img id="zoomed-img" src="" alt="Preview" class="max-w-full max-h-[90vh] rounded-2xl shadow-2xl border-4 border-white" />
   </div>
+
+  <!-- ==================== AREA CETAK PDF INVOICE (4 KOLOM SAJA) ==================== -->
+  <div id="invoice-pdf-print-area" class="hidden"></div>
 
   <!-- ==================== FIREBASE & APPLICATION LOGIC ==================== -->
   <script type="module">
@@ -2683,6 +2741,76 @@
       `;
 
       container.innerHTML = summaryHtml + detailHtml;
+    };
+
+    window.downloadInvoicePDF = function() {
+      if (appState.session?.role !== 'admin') {
+        showToast("Menu invoice khusus Admin ya! 🔒", "warning");
+        return;
+      }
+
+      const printArea = document.getElementById('invoice-pdf-print-area');
+      if (!printArea) return;
+
+      const validItems = appState.items.filter(
+        it => it.status !== 'Retur & Refund' && it.status !== 'Ga Kebawa'
+      );
+
+      if (!validItems.length) {
+        showToast("Tidak ada barang untuk dicetak ke PDF.", "warning");
+        return;
+      }
+
+      const rowsHtml = validItems.map(it => {
+        const proofs = Array.isArray(it.photosCheckout) ? it.photosCheckout : [];
+        const proofsHtml = proofs.length
+          ? `<div class="pdf-proof-grid">${proofs.map(src => `<img src="${src}" alt="Bukti beli" />`).join('')}</div>`
+          : `<span style="color:#64748b;font-size:11px;">-</span>`;
+
+        const priceText = it.itemPrice !== undefined && it.itemPrice !== null && it.itemPrice !== ''
+          ? escapeHtml(String(Number(it.itemPrice)))
+          : '0';
+
+        const resiText = it.resi ? escapeHtml(it.resi) : '-';
+
+        return `
+          <tr>
+            <td style="font-weight:700;">${escapeHtml(it.itemName)}</td>
+            <td>${proofsHtml}</td>
+            <td style="font-family:monospace;font-weight:700;">${priceText}</td>
+            <td style="font-family:monospace;">${resiText}</td>
+          </tr>
+        `;
+      }).join('');
+
+      printArea.innerHTML = `
+        <table class="pdf-inv-table">
+          <thead>
+            <tr>
+              <th>Nama Barang</th>
+              <th>Bukti Beli Barang</th>
+              <th>Harga Barang</th>
+              <th>Resi Barang</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+
+      document.body.classList.add('printing-invoice-only');
+      showToast("Menyiapkan PDF invoice... 📄", "info");
+
+      const cleanup = () => {
+        document.body.classList.remove('printing-invoice-only');
+        printArea.innerHTML = '';
+        window.removeEventListener('afterprint', cleanup);
+      };
+
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      setTimeout(cleanup, 1500);
     };
 
     // --- Export CSV (Spreadsheet) & PDF ---
