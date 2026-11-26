@@ -119,8 +119,8 @@
       gap: 6px;
     }
     .pdf-proof-grid img {
-      width: 84px;
-      height: 84px;
+      width: 96px;
+      height: 96px;
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid #cbd5e1;
@@ -148,8 +148,8 @@
         page-break-inside: avoid;
       }
       body.printing-invoice-only .pdf-proof-grid img {
-        width: 84px !important;
-        height: 84px !important;
+        width: 96px !important;
+        height: 96px !important;
         object-fit: cover !important;
         print-color-adjust: exact !important;
         -webkit-print-color-adjust: exact !important;
@@ -949,7 +949,7 @@
     <img id="zoomed-img" src="" alt="Preview" class="max-w-full max-h-[90vh] rounded-2xl shadow-2xl border-4 border-white" />
   </div>
 
-  <!-- ==================== AREA CETAK PDF INVOICE (4 KOLOM SAJA) ==================== -->
+  <!-- ==================== AREA CETAK PDF INVOICE (3 KOLOM: FOTO CHECKOUT, NAMA BARANG, HARGA BARANG) ==================== -->
   <div id="invoice-pdf-print-area"></div>
 
   <!-- ==================== FIREBASE & APPLICATION LOGIC ==================== -->
@@ -2818,7 +2818,7 @@
       showToast("File CSV invoice berhasil diunduh! 📊", "success");
     };
 
-    function waitForImagesLoaded(containerEl, timeoutMs = 2000) {
+    function waitForImagesLoaded(containerEl, timeoutMs = 2500) {
       const imgs = Array.from(containerEl.querySelectorAll('img'));
       if (!imgs.length) return Promise.resolve();
 
@@ -2861,23 +2861,20 @@
       }
 
       const rowsHtml = validItems.map(it => {
-        const rawProofs = Array.isArray(it.photosCheckout) ? it.photosCheckout : [];
-        const safeProofs = rawProofs.map(sanitizeImageSrc).filter(Boolean);
-        const proofsHtml = safeProofs.length
-          ? `<div class="pdf-proof-grid">${safeProofs.map(src => `<img src="${src}" alt="Foto beli barang" />`).join('')}</div>`
+        const rawCheckoutPhotos = Array.isArray(it.photosCheckout) ? it.photosCheckout : [];
+        const safeCheckoutPhotos = rawCheckoutPhotos.map(sanitizeImageSrc).filter(Boolean);
+        const photoCellHtml = safeCheckoutPhotos.length
+          ? `<div class="pdf-proof-grid">${safeCheckoutPhotos.map(src => `<img src="${src}" alt="Foto checkout" />`).join('')}</div>`
           : `<span style="color:#64748b;font-size:11px;">-</span>`;
 
         const priceText = it.itemPrice !== undefined && it.itemPrice !== null && it.itemPrice !== ''
           ? escapeHtml(String(Number(it.itemPrice)))
           : '0';
 
-        const resiText = it.resi ? escapeHtml(it.resi) : '-';
-
         return `
           <tr>
+            <td>${photoCellHtml}</td>
             <td style="font-weight:700;">${escapeHtml(it.itemName)}</td>
-            <td>${proofsHtml}</td>
-            <td style="font-family:monospace;">${resiText}</td>
             <td style="font-family:monospace;font-weight:700;">${priceText}</td>
           </tr>
         `;
@@ -2887,9 +2884,8 @@
         <table class="pdf-inv-table">
           <thead>
             <tr>
+              <th>Foto Checkout</th>
               <th>Nama Barang</th>
-              <th>Foto Beli Barang</th>
-              <th>Resi Barang</th>
               <th>Harga Barang</th>
             </tr>
           </thead>
@@ -2901,9 +2897,9 @@
 
       isPrintingInvoice = true;
       document.body.classList.add('printing-invoice-only');
-      showToast("Menyiapkan foto & PDF invoice... 📄", "info");
+      showToast("Menyiapkan PDF foto checkout, nama & harga barang... 📄", "info");
 
-      await waitForImagesLoaded(printArea, 2000);
+      await waitForImagesLoaded(printArea, 2500);
 
       const cleanup = () => {
         if (!isPrintingInvoice) return;
